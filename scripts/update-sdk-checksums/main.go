@@ -161,26 +161,15 @@ func updatePostinstallVersion(newVersion string) error {
 		return fmt.Errorf("failed to read %s: %w", sdkPostinstallPath, err)
 	}
 
-	// Regex: const TEST_SERVER_VERSION = '...'; or const TEST_SERVER_VERSION = "...";
-	// It captures the part inside the quotes.
-	// Group 1: (const\s+TEST_SERVER_VERSION\s*=\s*)
-	// Group 2: (['"])
-	// Group 3: ([^'"]+) - the old version
-	// Group 4: (['"])
-	// Group 5: (\s*;)
-	re := regexp.MustCompile(fmt.Sprintf(`(const\s+%s\s*=\s*)(['"])([^'"]+)(['"])(\s*;)`, regexp.QuoteMeta(testServerVersionVar)))
+	re := regexp.MustCompile(`(?m)^\s*const TEST_SERVER_VERSION = .*$`)
 
 	if !re.Match(content) {
 		return fmt.Errorf("could not find '%s' constant in %s. Pattern not matched: %s", testServerVersionVar, sdkPostinstallPath, re.String())
 	}
 
-	// ReplaceAllString with $1'$newVersion'$4$5 to preserve quotes and semicolon
-	// $1 is the prefix (const TEST_SERVER_VERSION = )
-	// $2 is the opening quote, $3 is old version, $4 is closing quote
-	// $5 is the semicolon
-	// We want to replace $3 with newVersion, and keep $2 and $4 as they were (could be single or double)
+	replacement := fmt.Sprintf("const TEST_SERVER_VERSION = '%s';", newVersion)
 
-	updatedContent := re.ReplaceAllString(string(content), fmt.Sprintf("${1}${2}%s${4}${5}", newVersion))
+	updatedContent := re.ReplaceAllString(string(content), replacement)
 
 	err = os.WriteFile(sdkPostinstallPath, []byte(updatedContent), 0644)
 	if err != nil {

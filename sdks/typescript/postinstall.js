@@ -23,7 +23,6 @@ const axios = require('axios');
 const extract = require('extract-zip');
 const tar = require('tar');
 const allExpectedChecksums = require('./checksums.json');
-
 const TEST_SERVER_VERSION = 'v0.0.1';
 
 const GITHUB_OWNER = 'google';
@@ -69,7 +68,7 @@ async function downloadBinaryArchive(downloadUrl, archivePath, version, archiveN
             url: downloadUrl,
             method: 'GET',
             responseType: 'stream',
-            timeout: 600000 // 10 minutes timeout
+            timeout: 60000 // 1 minute timeout
         });
         response.data.pipe(writer);
         await new Promise((resolve, reject) => {
