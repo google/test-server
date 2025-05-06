@@ -1,6 +1,6 @@
 *.swp
 test-server
-recordings
+/recordings
 dist/
 
 # TypeScript SDK specific
