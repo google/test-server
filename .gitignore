@@ -2,3 +2,8 @@
 test-server
 recordings
 dist/
+
+# TypeScript SDK specific
+sdks/typescript/node_modules/
+sdks/typescript/dist/
+sdks/typescript/bin/

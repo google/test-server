@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A TypeScript SDK for convenient integration in TypeScript projects.
+
 ## [0.0.1] - 2025-05-05
 
 ### Added

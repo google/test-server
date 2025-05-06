@@ -1,0 +1,41 @@
+{
+  "name": "test-server-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for test-server",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "postinstall": "node postinstall.js",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "npm run build & jasmine"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/google/test-server.git"
+  },
+  "keywords": [
+    "test-server",
+    "testing",
+    "http",
+    "proxy",
+    "record",
+    "replay"
+  ],
+  "author": "Google",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "extract-zip": "^2.0.1",
+    "tar": "^6.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/tar": "^6.1.0",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "postinstall.js"
+  ]
+}

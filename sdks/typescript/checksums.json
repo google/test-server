@@ -1,0 +1,12 @@
+{
+  "v0.0.1": {
+    "test-server_Darwin_arm64.tar.gz": "8d5ff282451b8d49fa6f290ec11d4ee9fcc948f28ae2713f928f4e3eeaf35d2e",
+    "test-server_Darwin_x86_64.tar.gz": "793b97d96d1a4a65fdef4510266047725aca6a7f39be3958f039b5f5d377c5f3",
+    "test-server_Linux_arm64.tar.gz": "b77c68d7549eb8f1ba0569434f11236cb08222bead8235bef2f6dc194eff4318",
+    "test-server_Linux_i386.tar.gz": "e9ec96227854a9def19cd112dfc22bfc776a6595314fb104b80f9d74d27a8ba2",
+    "test-server_Linux_x86_64.tar.gz": "35a157c5c9fbf2639ac8f8282f45186397ebd428b31808780421e2fa34923866",
+    "test-server_Windows_arm64.zip": "bf708e74aa1e6fd15529031c9a8f7d75b8fcc35cb7ef24c8c81a5b3e1ba2fca4",
+    "test-server_Windows_i386.zip": "13c5a1cde66b2795cb49b02dc672da66bbc2f934c67f733b7313ad4c10c68c96",
+    "test-server_Windows_x86_64.zip": "6105a98d7b245a3b8868c173d2e36c0e2a41c9e88a0e266b0f318b21f96a313f"
+  }
+}
