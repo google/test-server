@@ -7,3 +7,7 @@ dist/
 sdks/typescript/node_modules/
 sdks/typescript/dist/
 sdks/typescript/bin/
+
+# TypeScript SDK Sample specific
+sdks/typescript/sample/node_modules/
+sdks/typescript/sample/dist/
