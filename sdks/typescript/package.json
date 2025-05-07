@@ -36,6 +36,7 @@
   },
   "files": [
     "dist",
-    "postinstall.js"
+    "postinstall.js",
+    "checksums.json"
   ]
 }
