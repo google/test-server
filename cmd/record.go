@@ -16,6 +16,9 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+	"strings"
+
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/record"
 	"github.com/spf13/cobra"
@@ -33,7 +36,13 @@ target server, and all requests and responses will be recorded.`,
 		if err != nil {
 			panic(err)
 		}
-		err = record.Record(config, recordingDir)
+
+		secrets := os.Getenv("TEST_SERVER_SECRETS")
+		if secrets != "" {
+			config.SecretsToRedact = strings.Split(secrets, ",")
+		}
+
+		err = record.Record(config, recordingDir, config.SecretsToRedact)
 		if err != nil {
 			panic(err)
 		}

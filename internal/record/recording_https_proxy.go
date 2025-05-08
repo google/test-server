@@ -34,13 +34,15 @@ type RecordingHTTPSProxy struct {
 	prevRequestSHA string
 	config         *config.EndpointConfig
 	recordingDir   string
+	secretsToRedact []string
 }
 
-func NewRecordingHTTPSProxy(cfg *config.EndpointConfig, recordingDir string) *RecordingHTTPSProxy {
+func NewRecordingHTTPSProxy(cfg *config.EndpointConfig, recordingDir string, secretsToRedact []string) *RecordingHTTPSProxy {
 	return &RecordingHTTPSProxy{
 		prevRequestSHA: store.HeadSHA,
 		config:         cfg,
 		recordingDir:   recordingDir,
+		secretsToRedact: secretsToRedact,
 	}
 }
 
@@ -99,6 +101,7 @@ func (r *RecordingHTTPSProxy) recordRequest(req *http.Request) (string, error) {
 	}
 
 	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
+	recordedRequest.Redact(r.secretsToRedact)
 
 	reqHash, err := recordedRequest.ComputeSum()
 	if err != nil {
@@ -165,6 +168,8 @@ func (r *RecordingHTTPSProxy) recordResponse(resp *http.Response, reqHash string
 	if err != nil {
 		return err
 	}
+
+	recordedResponse.Redact(r.secretsToRedact)
 
 	recordPath := filepath.Join(r.recordingDir, reqHash+".resp")
 	fmt.Printf("Writing response to: %s\n", recordPath)

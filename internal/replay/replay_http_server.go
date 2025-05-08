@@ -27,16 +27,18 @@ import (
 )
 
 type ReplayHTTPServer struct {
-	prevRequestSHA string
-	config         *config.EndpointConfig
-	recordingDir   string
+	prevRequestSHA  string
+	config          *config.EndpointConfig
+	recordingDir    string
+	secretsToRedact []string
 }
 
-func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string) *ReplayHTTPServer {
+func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, secretsToRedact []string) *ReplayHTTPServer {
 	return &ReplayHTTPServer{
-		prevRequestSHA: store.HeadSHA,
-		config:         cfg,
-		recordingDir:   recordingDir,
+		prevRequestSHA:  store.HeadSHA,
+		config:          cfg,
+		recordingDir:    recordingDir,
+		secretsToRedact: secretsToRedact,
 	}
 }
 
@@ -53,8 +55,15 @@ func (r *ReplayHTTPServer) Start() error {
 }
 
 func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
-	fmt.Printf("Replaying request: %s %s\n", req.Method, req.URL.String())
-	reqHash, err := r.computeRequestHash(req)
+	redactedReq, err := r.createRedactedRequest(req)
+	if err != nil {
+		fmt.Printf("Error processing request")
+		http.Error(w, fmt.Sprintf("Error processing request: %v", err), http.StatusInternalServerError)
+		return
+	}
+	fmt.Printf("Replaying request: %ss\n", redactedReq.Request)
+
+	reqHash, err := redactedReq.ComputeSum()
 	if err != nil {
 		fmt.Printf("Error computing request sum: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error computing request sum: %v", err), http.StatusInternalServerError)
@@ -75,20 +84,16 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (r *ReplayHTTPServer) computeRequestHash(req *http.Request) (string, error) {
+func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.RecordedRequest, error) {
 	recordedRequest, err := store.NewRecordedRequest(req, r.prevRequestSHA, *r.config)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
+	recordedRequest.Redact(r.secretsToRedact)
 
-	reqHash, err := recordedRequest.ComputeSum()
-	if err != nil {
-		return "", err
-	}
-
-	return reqHash, nil
+	return recordedRequest, nil
 }
 
 func (r *ReplayHTTPServer) loadResponse(sha string) (*store.RecordedResponse, error) {

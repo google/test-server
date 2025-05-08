@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - A TypeScript SDK for convenient integration in TypeScript projects.
+- Secret redaction via the TEST_SERVER_SECRETS environment variable.
 
 ## [0.0.1] - 2025-05-05
 

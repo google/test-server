@@ -24,7 +24,7 @@ import (
 	"github.com/google/test-server/internal/config"
 )
 
-func Record(cfg *config.TestServerConfig, recordingDir string) error {
+func Record(cfg *config.TestServerConfig, recordingDir string, secretsToRedact []string) error {
 	// Create recording directory if it doesn't exist
 	if err := os.MkdirAll(recordingDir, 0755); err != nil {
 		return fmt.Errorf("failed to create recording directory: %w", err)
@@ -41,7 +41,7 @@ func Record(cfg *config.TestServerConfig, recordingDir string) error {
 			defer wg.Done()
 
 			fmt.Printf("Starting server for %v\n", endpoint)
-			proxy := NewRecordingHTTPSProxy(&endpoint, recordingDir)
+			proxy := NewRecordingHTTPSProxy(&endpoint, recordingDir, secretsToRedact)
 			err := proxy.Start()
 
 			if err != nil {

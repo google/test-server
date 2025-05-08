@@ -17,6 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+	"strings"
+
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/replay"
 	"github.com/spf13/cobra"
@@ -37,7 +40,13 @@ recording is found.`,
 		if err != nil {
 			panic(err)
 		}
-		err = replay.Replay(config, replayRecordingDir)
+
+		secrets := os.Getenv("TEST_SERVER_SECRETS")
+		if secrets != "" {
+			config.SecretsToRedact = strings.Split(secrets, ",")
+		}
+
+		err = replay.Replay(config, replayRecordingDir, config.SecretsToRedact)
 		if err != nil {
 			panic(err)
 		}
