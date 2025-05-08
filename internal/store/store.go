@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -202,46 +201,6 @@ func Deserialize(data string) (*RecordedRequest, error) {
 	return recordedRequest, nil
 }
 
-// RedactHeaders removes the specified headers from the RecordedRequest.
-func (r *RecordedRequest) RedactHeaders(headers []string) {
-	for _, header := range headers {
-		r.Header.Del(header)
-	}
-}
-
-// Redact replaces occurrences of specified secrets in the request.
-func (r *RecordedRequest) Redact(secrets []string) {
-	filteredSecrets := []string{}
-	for _, secret := range secrets {
-		if secret != "" {
-			filteredSecrets = append(filteredSecrets, regexp.QuoteMeta(secret))
-		}
-	}
-
-	if len(filteredSecrets) == 0 {
-		return
-	}
-
-	// Create a single regex for all secrets
-	regexPattern := strings.Join(filteredSecrets, "|")
-	re := regexp.MustCompile(regexPattern)
-
-	// Redact in the request line (path and query)
-	r.Request = re.ReplaceAllString(r.Request, "REDACTED")
-
-	// Redact in headers
-	for name, values := range r.Header {
-		for i, value := range values {
-			r.Header[name][i] = re.ReplaceAllString(value, "REDACTED")
-		}
-	}
-
-	// Redact in body
-	r.Body = []byte(re.ReplaceAllString(string(r.Body), "REDACTED"))
-}
-
-
-
 type RecordedResponse struct {
 	StatusCode int
 	Header     http.Header
@@ -287,34 +246,6 @@ func (r *RecordedResponse) Serialize() string {
 	buffer.Write(r.Body)
 
 	return buffer.String()
-}
-
-// Redact replaces occurrences of specified secrets in the response.
-func (r *RecordedResponse) Redact(secrets []string) {
-	filteredSecrets := []string{}
-	for _, secret := range secrets {
-		if secret != "" {
-			filteredSecrets = append(filteredSecrets, regexp.QuoteMeta(secret))
-		}
-	}
-
-	if len(filteredSecrets) == 0 {
-		return
-	}
-
-	// Create a single regex for all secrets
-	regexPattern := strings.Join(filteredSecrets, "|")
-	re := regexp.MustCompile(regexPattern)
-
-	// Redact in headers
-	for name, values := range r.Header {
-		for i, value := range values {
-			r.Header[name][i] = re.ReplaceAllString(value, "REDACTED")
-		}
-	}
-
-	// Redact in body
-	r.Body = []byte(re.ReplaceAllString(string(r.Body), "REDACTED"))
 }
 
 // DeserializeResponse deserializes the response.

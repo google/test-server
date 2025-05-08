@@ -23,22 +23,23 @@ import (
 	"path/filepath"
 
 	"github.com/google/test-server/internal/config"
+	"github.com/google/test-server/internal/redact"
 	"github.com/google/test-server/internal/store"
 )
 
 type ReplayHTTPServer struct {
-	prevRequestSHA  string
-	config          *config.EndpointConfig
-	recordingDir    string
-	secretsToRedact []string
+	prevRequestSHA string
+	config         *config.EndpointConfig
+	recordingDir   string
+	redactor       *redact.Redact
 }
 
-func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, secretsToRedact []string) *ReplayHTTPServer {
+func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *ReplayHTTPServer {
 	return &ReplayHTTPServer{
-		prevRequestSHA:  store.HeadSHA,
-		config:          cfg,
-		recordingDir:    recordingDir,
-		secretsToRedact: secretsToRedact,
+		prevRequestSHA: store.HeadSHA,
+		config:         cfg,
+		recordingDir:   recordingDir,
+		redactor:       redactor,
 	}
 }
 
@@ -90,8 +91,10 @@ func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.Reco
 		return nil, err
 	}
 
-	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
-	recordedRequest.Redact(r.secretsToRedact)
+	r.redactor.Headers(recordedRequest.Header)
+	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
+	r.redactor.Headers(recordedRequest.Header)
+	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
 
 	return recordedRequest, nil
 }

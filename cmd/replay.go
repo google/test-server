@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/google/test-server/internal/config"
+	"github.com/google/test-server/internal/redact"
 	"github.com/google/test-server/internal/replay"
 	"github.com/spf13/cobra"
 )
@@ -42,11 +43,12 @@ recording is found.`,
 		}
 
 		secrets := os.Getenv("TEST_SERVER_SECRETS")
-		if secrets != "" {
-			config.SecretsToRedact = strings.Split(secrets, ",")
+		redactor, err := redact.NewRedact(strings.Split(secrets, ","))
+		if err != nil {
+			panic(err)
 		}
 
-		err = replay.Replay(config, replayRecordingDir, config.SecretsToRedact)
+		err = replay.Replay(config, replayRecordingDir, redactor)
 		if err != nil {
 			panic(err)
 		}

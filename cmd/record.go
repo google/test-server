@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/record"
+	"github.com/google/test-server/internal/redact"
 	"github.com/spf13/cobra"
 )
 
@@ -38,11 +39,12 @@ target server, and all requests and responses will be recorded.`,
 		}
 
 		secrets := os.Getenv("TEST_SERVER_SECRETS")
-		if secrets != "" {
-			config.SecretsToRedact = strings.Split(secrets, ",")
+		redactor, err := redact.NewRedact(strings.Split(secrets, ","))
+		if err != nil {
+			panic(err)
 		}
 
-		err = record.Record(config, recordingDir, config.SecretsToRedact)
+		err = record.Record(config, recordingDir, redactor)
 		if err != nil {
 			panic(err)
 		}

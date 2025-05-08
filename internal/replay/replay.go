@@ -21,10 +21,11 @@ import (
 	"os"
 
 	"github.com/google/test-server/internal/config"
+	"github.com/google/test-server/internal/redact"
 )
 
 // Replay serves recorded responses for HTTP requests
-func Replay(cfg *config.TestServerConfig, recordingDir string, secretsToRedact []string) error {
+func Replay(cfg *config.TestServerConfig, recordingDir string, redactor *redact.Redact) error {
 	// Validate recording directory exists
 	if _, err := os.Stat(recordingDir); os.IsNotExist(err) {
 		return fmt.Errorf("recording directory does not exist: %s", recordingDir)
@@ -37,7 +38,7 @@ func Replay(cfg *config.TestServerConfig, recordingDir string, secretsToRedact [
 
 	for _, endpoint := range cfg.Endpoints {
 		go func(ep config.EndpointConfig) {
-			server := NewReplayHTTPServer(&endpoint, recordingDir, secretsToRedact)
+			server := NewReplayHTTPServer(&endpoint, recordingDir, redactor)
 			err := server.Start()
 			if err != nil {
 				errChan <- fmt.Errorf("replay error for %s:%d: %w",

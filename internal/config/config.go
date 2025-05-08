@@ -41,7 +41,6 @@ type HeaderReplacement struct {
 
 type TestServerConfig struct {
 	Endpoints []EndpointConfig `yaml:"endpoints"`
-	SecretsToRedact            []string            `yaml:"-"` // Not loaded from config, set via env var
 }
 
 func ReadConfig(filename string) (*TestServerConfig, error) {
