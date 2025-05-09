@@ -184,6 +184,97 @@ func TestNewRecordedRequest(t *testing.T) {
 	}
 }
 
+func TestRecordedRequest_RedactHeaders(t *testing.T) {
+	testCases := []struct {
+		name            string
+		request         RecordedRequest
+		headersToRedact []string
+		expectedHeaders http.Header
+	}{
+		{
+			name: "Redact single header",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Accept":       []string{"application/xml"},
+					"Content-Type": []string{"application/json"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			headersToRedact: []string{"Content-Type"},
+			expectedHeaders: http.Header{
+				"Accept": []string{"application/xml"},
+			},
+		},
+		{
+			name: "Redact multiple headers",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Accept":        []string{"application/xml"},
+					"Content-Type":  []string{"application/json"},
+					"Authorization": []string{"Bearer token"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			headersToRedact: []string{"Content-Type", "Authorization"},
+			expectedHeaders: http.Header{
+				"Accept": []string{"application/xml"},
+			},
+		},
+		{
+			name: "Redact non-existent header",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Accept": []string{"application/xml"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			headersToRedact: []string{"Non-Existent"},
+			expectedHeaders: http.Header{
+				"Accept": []string{"application/xml"},
+			},
+		},
+		{
+			name: "Redact all headers",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Accept":       []string{"application/xml"},
+					"Content-Type": []string{"application/json"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			headersToRedact: []string{"Accept", "Content-Type"},
+			expectedHeaders: http.Header{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.request.RedactHeaders(tc.headersToRedact)
+			require.Equal(t, tc.expectedHeaders, tc.request.Header, "RedactHeaders() result mismatch")
+		})
+	}
+}
+
 func TestRecordedRequest_Deserialize(t *testing.T) {
 	testCases := []struct {
 		name        string

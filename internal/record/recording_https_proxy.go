@@ -101,9 +101,11 @@ func (r *RecordingHTTPSProxy) recordRequest(req *http.Request) (string, error) {
 		return "", err
 	}
 
+	// Redact headers by key
+	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
+	// Redacts secrets from header values
 	r.redactor.Headers(recordedRequest.Header)
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
-	r.redactor.Headers(recordedRequest.Header)
 	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
 
 	reqHash, err := recordedRequest.ComputeSum()
