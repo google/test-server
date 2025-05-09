@@ -95,6 +95,7 @@ func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.Reco
 	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
 	// Redacts secrets from header values
 	r.redactor.Headers(recordedRequest.Header)
+	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
 	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
 
 	return recordedRequest, nil
