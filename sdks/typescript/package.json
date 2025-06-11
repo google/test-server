@@ -1,6 +1,6 @@
 {
   "name": "test-server-sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "TypeScript SDK for test-server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,7 +27,8 @@
   "dependencies": {
     "axios": "^1.6.0",
     "extract-zip": "^2.0.1",
-    "tar": "^6.2.0"
+    "tar": "^6.2.0",
+    "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

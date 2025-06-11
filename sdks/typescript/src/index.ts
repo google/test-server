@@ -17,6 +17,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { parse } from 'yaml';
 
 const PROJECT_NAME = 'test-server';
 
@@ -67,7 +68,7 @@ export interface TestServerOptions {
  * @param options Configuration options for starting the server.
  * @returns The spawned ChildProcess instance.
  */
-export function startTestServer(options: TestServerOptions): ChildProcess {
+export async function startTestServer(options: TestServerOptions): Promise<ChildProcess> {
     const { configPath, recordingDir, mode: optionsMode, env, onStdOut, onStdErr, onExit, onError } = options;
     const binaryPath = getBinaryPath();
 
@@ -136,6 +137,7 @@ export function startTestServer(options: TestServerOptions): ChildProcess {
     });
     
     console.log(`[test-server-sdk] test-server process (PID: ${serverProcess.pid}) started.`);
+    await awaitHealthyTestServer(options);
     return serverProcess;
 }
 
@@ -190,4 +192,54 @@ export function stopTestServer(serverProcess: ChildProcess): Promise<void> {
             }
         }, 5000); // 5 seconds timeout
     });
+}
+
+/**
+ * Waits for the test-server to become healthy by checking the configured health endpoints.
+ * It reads the config file and performs health checks on all endpoints that have a 'health' path defined.
+ * It uses a retry mechanism with exponential backoff for health checks.
+ *
+ * @param options Configuration options containing the configPath.
+ */
+async function awaitHealthyTestServer(options: TestServerOptions): Promise<void> {
+    const configRaw = fs.readFileSync(options.configPath, { encoding: 'utf8' });
+    const config = parse(configRaw)
+    for (const endpoint of config['endpoints']) {
+      if (!("health" in endpoint)) {
+        continue;
+      }
+      const url = `${endpoint['source_type']}://localhost:${endpoint['source_port']}/${endpoint['health']}`
+      await healthCheck(url);
+    }
+    return;
+}
+
+/**
+ * Performs a health check on a given URL with a retry mechanism.
+ * It retries fetching the URL up to MAX_RETRIES times with an exponential backoff delay.
+ *
+ * @param url The URL to check for health.
+ * @returns A Promise that resolves if the health check is successful.
+ * @throws An error if the health check fails after all retries.
+ */
+async function healthCheck(url: string): Promise<void> {
+    const MAX_RETRIES = 10;
+    const BASE_DELAY_MS = 100;
+
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                return;
+            }
+        } catch (error) {
+            console.warn(`[test-server-sdk] Health check attempt ${i + 1} failed for ${url}. Error: ${error}`);
+        }
+
+        const delay = BASE_DELAY_MS * Math.pow(2, i);
+        console.log(`[test-server-sdk] Retrying health check for ${url} in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    throw new Error(`[test-server-sdk] Health check failed for ${url} after ${MAX_RETRIES} retries.`);
 }

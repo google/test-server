@@ -26,7 +26,7 @@ describe('Sample Test Suite (with test-server)', () => {
 
     beforeAll(async () => {
         try {
-            serverProcess = startTestServer(sampleTestServerOptions);
+            serverProcess = await startTestServer(sampleTestServerOptions);
             console.log(`[SampleSpec] test-server started with PID: ${serverProcess.pid}. Waiting for it to be ready...`);
             // TODO(amirh): Replace this with some sort of a readiness check.
             await new Promise(resolve => setTimeout(resolve, 500));

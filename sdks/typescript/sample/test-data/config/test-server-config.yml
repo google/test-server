@@ -1,6 +1,7 @@
 endpoints:
-  - target_host: www.github.com
+  - target_host: github.com
     target_type: https
     target_port: 443
     source_type: http
     source_port: 18080
+    health: healthz
