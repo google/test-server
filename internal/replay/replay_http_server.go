@@ -56,6 +56,11 @@ func (r *ReplayHTTPServer) Start() error {
 }
 
 func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == r.config.Health {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	redactedReq, err := r.createRedactedRequest(req)
 	if err != nil {
 		fmt.Printf("Error processing request")

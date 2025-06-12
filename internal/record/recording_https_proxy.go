@@ -64,6 +64,10 @@ func (r *RecordingHTTPSProxy) Start() error {
 }
 
 func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == r.config.Health {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	fmt.Printf("Recording request: %s %s\n", req.Method, req.URL.String())
 
 	reqHash, err := r.recordRequest(req)

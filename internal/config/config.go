@@ -29,6 +29,7 @@ type EndpointConfig struct {
 	TargetPort                 int64               `yaml:"target_port"`
 	SourcePort                 int64               `yaml:"source_port"`
 	SourceType                 string              `yaml:"source_type"`
+	Health                     string              `yaml:"health"`
 	RedactRequestHeaders       []string            `yaml:"redact_request_headers"`
 	ResponseHeaderReplacements []HeaderReplacement `yaml:"response_header_replacements"`
 }
