@@ -17,7 +17,9 @@ package cmd
 
 import (
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/record"
@@ -33,6 +35,9 @@ var recordCmd = &cobra.Command{
 	Long: `Runs test-server in record mode, all request will be proxies to the
 target server, and all requests and responses will be recorded.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+		defer stop()
+
 		config, err := config.ReadConfig(cfgFile)
 		if err != nil {
 			panic(err)
@@ -44,7 +49,7 @@ target server, and all requests and responses will be recorded.`,
 			panic(err)
 		}
 
-		err = record.Record(config, recordingDir, redactor)
+		err = record.Record(ctx, config, recordingDir, redactor)
 		if err != nil {
 			panic(err)
 		}

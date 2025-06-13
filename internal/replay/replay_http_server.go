@@ -17,10 +17,12 @@ limitations under the License.
 package replay
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
@@ -43,15 +45,33 @@ func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, redact
 	}
 }
 
-func (r *ReplayHTTPServer) Start() error {
+func (r *ReplayHTTPServer) Start(ctx context.Context) error {
 	addr := fmt.Sprintf(":%d", r.config.SourcePort)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: http.HandlerFunc(r.handleRequest),
 	}
-	if err := server.ListenAndServe(); err != nil {
-		panic(err)
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- server.ListenAndServe()
+	}()
+
+	select {
+	case <-ctx.Done():
+		fmt.Printf("Shutting down server on %s\n", addr)
+		cancelCtx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.ShutdownTimeoutSeconds)*time.Second)
+		defer cancel()
+		if err := server.Shutdown(cancelCtx); err != nil {
+			return fmt.Errorf("failed to shutdown server: %w", err)
+		}
+	case err := <-errCh:
+		if err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("failed to start replay server: %w", err)
+		}
 	}
+
 	return nil
 }
 

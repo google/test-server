@@ -17,15 +17,17 @@ limitations under the License.
 package replay
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
+	"golang.org/x/sync/errgroup"
 )
 
 // Replay serves recorded responses for HTTP requests
-func Replay(cfg *config.TestServerConfig, recordingDir string, redactor *redact.Redact) error {
+func Replay(ctx context.Context, cfg *config.TestServerConfig, recordingDir string, redactor *redact.Redact) error {
 	// Validate recording directory exists
 	if _, err := os.Stat(recordingDir); os.IsNotExist(err) {
 		return fmt.Errorf("recording directory does not exist: %s", recordingDir)
@@ -33,26 +35,20 @@ func Replay(cfg *config.TestServerConfig, recordingDir string, redactor *redact.
 
 	fmt.Printf("Replaying from directory: %s\n", recordingDir)
 
-	// Start a server for each endpoint
-	errChan := make(chan error, len(cfg.Endpoints))
+	errGroup, errCtx := errgroup.WithContext(ctx)
 
 	for _, endpoint := range cfg.Endpoints {
-		go func(ep config.EndpointConfig) {
+		ep := endpoint // Capture range variable
+		errGroup.Go(func() error {
 			server := NewReplayHTTPServer(&endpoint, recordingDir, redactor)
-			err := server.Start()
+			err := server.Start(errCtx)
 			if err != nil {
-				errChan <- fmt.Errorf("replay error for %s:%d: %w",
+				return fmt.Errorf("replay error for %s:%d: %w",
 					ep.TargetHost, ep.TargetPort, err)
 			}
-		}(endpoint)
+			return nil
+		})
 	}
 
-	// Return the first error encountered, if any
-	select {
-	case err := <-errChan:
-		return err
-	default:
-		// Block forever (or until interrupted)
-		select {}
-	}
+	return errGroup.Wait()
 }

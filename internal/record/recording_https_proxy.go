@@ -18,12 +18,14 @@ package record
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"time"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
@@ -51,15 +53,33 @@ func (r *RecordingHTTPSProxy) ResetChain() {
 	r.prevRequestSHA = store.HeadSHA
 }
 
-func (r *RecordingHTTPSProxy) Start() error {
+func (r *RecordingHTTPSProxy) Start(ctx context.Context) error {
 	addr := fmt.Sprintf(":%d", r.config.SourcePort)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: http.HandlerFunc(r.handleRequest),
 	}
-	if err := server.ListenAndServe(); err != nil {
-		panic(err)
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- server.ListenAndServe()
+	}()
+
+	select {
+	case <-ctx.Done():
+		fmt.Printf("Context cancelled, shutting down server on %s\n", addr)
+		cancelCtx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.ShutdownTimeoutSeconds)*time.Second)
+		defer cancel()
+		if err := server.Shutdown(cancelCtx); err != nil {
+			return fmt.Errorf("failed to shutdown server: %w", err)
+		}
+	case err := <-errCh:
+		if err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("failed to start recording HTTPS proxy: %w", err)
+		}
 	}
+
 	return nil
 }
 
@@ -91,7 +111,6 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 
 	err = r.recordResponse(resp, reqHash, respBody)
-
 	if err != nil {
 		fmt.Printf("Error recording response: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error recording response: %v", err), http.StatusInternalServerError)
