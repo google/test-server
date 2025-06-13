@@ -18,7 +18,9 @@ package cmd
 
 import (
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
@@ -37,6 +39,9 @@ It listens on the configured source ports and returns recorded responses
 when it finds a matching request. Returns a 404 error if no matching
 recording is found.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+		defer stop()
+
 		config, err := config.ReadConfig(cfgFile)
 		if err != nil {
 			panic(err)
@@ -48,7 +53,7 @@ recording is found.`,
 			panic(err)
 		}
 
-		err = replay.Replay(config, replayRecordingDir, redactor)
+		err = replay.Replay(ctx, config, replayRecordingDir, redactor)
 		if err != nil {
 			panic(err)
 		}
