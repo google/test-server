@@ -208,7 +208,7 @@ async function awaitHealthyTestServer(options: TestServerOptions): Promise<void>
       if (!("health" in endpoint)) {
         continue;
       }
-      const url = `${endpoint['source_type']}://localhost:${endpoint['source_port']}/${endpoint['health']}`
+      const url = `${endpoint['source_type']}://localhost:${endpoint['source_port']}${endpoint['health']}`
       await healthCheck(url);
     }
     return;
