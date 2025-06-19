@@ -11,6 +11,7 @@ endpoints:
       - header: X-Goog-Upload-Url
         regex: "^https://generativelanguage.googleapis.com/"
         replace: "http://localhost:1443"
+    shutdown_timeout_seconds: 5
   - target_host: us-central1-aiplatform.googleapis.com
     target_port: 443
     source_port: 1444
@@ -19,4 +20,4 @@ endpoints:
     redact_request_headers:
       - X-Goog-Api-Key
       - Authorization
-
+    shutdown_timeout_seconds: 5

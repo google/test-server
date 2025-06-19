@@ -32,6 +32,9 @@ type EndpointConfig struct {
 	Health                     string              `yaml:"health"`
 	RedactRequestHeaders       []string            `yaml:"redact_request_headers"`
 	ResponseHeaderReplacements []HeaderReplacement `yaml:"response_header_replacements"`
+	// ShutdownTimeoutSeconds is the time in seconds to wait for the server to shutdown gracefully.
+	// default is 10 seconds.
+	ShutdownTimeoutSeconds int64 `yaml:"shutdown_timeout_seconds"`
 }
 
 type HeaderReplacement struct {
@@ -58,6 +61,12 @@ func ReadConfigWithFs(fs afero.Fs, filename string) (*TestServerConfig, error) {
 	err = yaml.Unmarshal(buf, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed parsing %s: %w", filename, err)
+	}
+
+	for i, ep := range config.Endpoints {
+		if ep.ShutdownTimeoutSeconds <= 1 {
+			config.Endpoints[i].ShutdownTimeoutSeconds = 10 // default to 10 seconds
+		}
 	}
 
 	return config, nil

@@ -17,52 +17,38 @@ limitations under the License.
 package record
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
+	"golang.org/x/sync/errgroup"
 )
 
-func Record(cfg *config.TestServerConfig, recordingDir string, redactor *redact.Redact) error {
+func Record(ctx context.Context, cfg *config.TestServerConfig, recordingDir string, redactor *redact.Redact) error {
 	// Create recording directory if it doesn't exist
 	if err := os.MkdirAll(recordingDir, 0755); err != nil {
 		return fmt.Errorf("failed to create recording directory: %w", err)
 	}
 
 	fmt.Printf("Recording to directory: %s\n", recordingDir)
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(cfg.Endpoints))
+	errGroup, errCtx := errgroup.WithContext(ctx)
 
 	// Start a proxy for each endpoint
 	for _, endpoint := range cfg.Endpoints {
-		wg.Add(1)
-		go func(ep config.EndpointConfig) {
-			defer wg.Done()
-
-			fmt.Printf("Starting server for %v\n", endpoint)
-			proxy := NewRecordingHTTPSProxy(&endpoint, recordingDir, redactor)
-			err := proxy.Start()
-
+		ep := endpoint
+		errGroup.Go(func() error {
+			fmt.Printf("Starting server for %v\n", ep)
+			proxy := NewRecordingHTTPSProxy(&ep, recordingDir, redactor)
+			err := proxy.Start(errCtx)
 			if err != nil {
-				errChan <- fmt.Errorf("proxy error for %s:%d: %w",
+				return fmt.Errorf("proxy error for %s:%d: %w",
 					ep.TargetHost, ep.TargetPort, err)
 			}
-		}(endpoint)
+			return nil
+		})
 	}
 
-	// Wait for all proxies to complete (they shouldn't unless there's an error)
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
-
-	// Return the first error encountered, if any
-	for err := range errChan {
-		return err
-	}
-
-	// Block forever (or until interrupted)
-	select {}
+	return errGroup.Wait()
 }
