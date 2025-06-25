@@ -70,11 +70,16 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 	fmt.Printf("Recording request: %s %s\n", req.Method, req.URL.String())
 
-	recReq, err := r.recordRequest(req)
-	fileName := recReq.GetRecordFileName()
-	if err != nil {
-		fmt.Printf("Error recording request: %v\n", err)
-		http.Error(w, fmt.Sprintf("Error recording request: %v", err), http.StatusInternalServerError)
+	recReq, recErr := r.recordRequest(req)
+	if recErr != nil {
+		fmt.Printf("Error recording request: %v\n", recErr)
+		http.Error(w, fmt.Sprintf("Error recording request: %v", recErr), http.StatusInternalServerError)
+		return
+	}
+	fileName, fileNameErr := recReq.GetRecordingFileName()
+	if fileNameErr != nil {
+		fmt.Printf("Invalid recording file name: %v\n", recErr)
+		http.Error(w, fmt.Sprintf("Invalid recording file name: %v", recErr), http.StatusInternalServerError)
 		return
 	}
 
@@ -113,7 +118,11 @@ func (r *RecordingHTTPSProxy) recordRequest(req *http.Request) (*store.RecordedR
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
 	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
 
-	fileName := recordedRequest.GetRecordFileName()
+	fileName, err := recordedRequest.GetRecordingFileName()
+	if err != nil {
+		fmt.Printf("Invalid recording file name: %v\n", err)
+		return recordedRequest, err
+	}
 	recordPath := filepath.Join(r.recordingDir, fileName+".req")
 	err = os.WriteFile(recordPath, []byte(recordedRequest.Serialize()), 0644)
 	if err != nil {
@@ -218,8 +227,8 @@ func (r *RecordingHTTPSProxy) proxyWebsocket(w http.ResponseWriter, req *http.Re
 	c := make(chan []byte)
 	quit := make(chan int)
 
-	go pumpWebsocket(clientConn, conn, c, quit, "[WS_MSG][C2S]")
-	go pumpWebsocket(conn, clientConn, c, quit, "[WS_MSG][S2C]")
+	go pumpWebsocket(clientConn, conn, c, quit, ">")
+	go pumpWebsocket(conn, clientConn, c, quit, "<")
 
 	recordPath := filepath.Join(r.recordingDir, fileName+".websocket")
 	f, err := os.Create(recordPath)
@@ -260,7 +269,8 @@ func pumpWebsocket(src, dst *websocket.Conn, c chan []byte, quit chan int, prepe
 			return
 		}
 		buf = append(buf, '\n')
-		c <- append([]byte(prepend), buf...)
+		prefix := fmt.Sprintf("%s%d", prepend, len(buf))
+		c <- append([]byte(prefix), buf...)
 		err = dst.WriteMessage(msgType, buf)
 		if err != nil {
 			fmt.Printf("Error writing to websocket: %v\n", err)

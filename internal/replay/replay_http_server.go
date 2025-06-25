@@ -21,7 +21,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
@@ -70,7 +72,12 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	fmt.Printf("Replaying request: %ss\n", redactedReq.Request)
-	fileName := redactedReq.GetRecordFileName()
+	fileName, err := redactedReq.GetRecordingFileName()
+	if err != nil {
+		fmt.Printf("Invalid recording file name: %v\n", err)
+		http.Error(w, fmt.Sprintf("Invalid recording file name: %v", err), http.StatusInternalServerError)
+		return
+	}
 	if req.Header.Get("Upgrade") == "websocket" {
 		fmt.Printf("Upgrading connection to websocket...\n")
 
@@ -154,26 +161,54 @@ func (r *ReplayHTTPServer) proxyWebsocket(w http.ResponseWriter, req *http.Reque
 func (r *ReplayHTTPServer) loadWebsocketChunks(sha string) ([]string, error) {
 	responseFile := filepath.Join(r.recordingDir, sha+".websocket")
 	fmt.Printf("loading websocket response from : %s\n", responseFile)
-	responseData, err := os.ReadFile(responseFile)
-	var chunks []string
+	bytes, err := os.ReadFile(responseFile)
+	var chunks = make([]string, 0)
 	if err != nil {
 		fmt.Printf("Error loading websocket response: %v\n", err)
 		return chunks, err
 	}
-	chunks = strings.Split(string(responseData), "[WS_MSG]")
-	var cleanChunks []string
-	for _, chunk := range chunks {
-		trimmedChunk := strings.TrimSpace(chunk)
-		if trimmedChunk != "" {
-			cleanChunks = append(cleanChunks, trimmedChunk)
+
+	i := 0
+	response := string(bytes)
+	for i < len(response) {
+		// Extracts prefix
+		prefix := response[i]
+		if prefix != '>' && prefix != '<' {
+			return nil, fmt.Errorf("invalid message prefix at position %d: expected '>' or '<', got '%c'", i, prefix)
 		}
+		i++ // Move cursor past prefix.
+
+		// Extracts chunk length
+		numStart := i
+		for i < len(response) && unicode.IsDigit(rune(response[i])) {
+			i++
+		}
+		numEnd := i
+		if numStart == numEnd {
+			return nil, fmt.Errorf("missing chunk length after prefix at position %d", numStart-1)
+		}
+		numStr := response[numStart:numEnd]
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid chunk length '%s': %w", numStr, err)
+		}
+
+		// Extracts chunk
+		chunkStart := numEnd
+		chunkEnd := chunkStart + num
+		if chunkEnd > len(response) {
+			return nil, fmt.Errorf("chunk length %d at position %d exceeds response bounds", chunkEnd, chunkStart)
+		}
+		chunk := response[chunkStart : chunkEnd-1] // Remove the \n appended at the end of the chunk
+		chunks = append(chunks, string(prefix)+chunk)
+		i = chunkEnd
 	}
-	return cleanChunks, nil
+	return chunks, nil
 }
 
 func replayWebsocket(conn *websocket.Conn, chunks []string) {
 	for _, chunk := range chunks {
-		if strings.HasPrefix(chunk, "[C2S]") {
+		if strings.HasPrefix(chunk, ">") {
 			_, buf, err := conn.ReadMessage()
 			reqChunk := string(buf)
 			if err != nil {
@@ -182,14 +217,14 @@ func replayWebsocket(conn *websocket.Conn, chunks []string) {
 			}
 
 			runes := []rune(chunk)
-			recChunk := string(runes[5:])
+			recChunk := string(runes[1:])
 			if reqChunk != recChunk {
 				fmt.Printf("input chunk mismatch\n Input chunk: %s\n Recorded chunk: %s\n", reqChunk, recChunk)
 				return
 			}
-		} else if strings.HasPrefix(chunk, "[S2C]") {
+		} else if strings.HasPrefix(chunk, "<") {
 			runes := []rune(chunk)
-			recChunk := string(runes[5:])
+			recChunk := string(runes[1:])
 			// Write binary message. (messageType=2)
 			err := conn.WriteMessage(2, []byte(recChunk))
 			if err != nil {

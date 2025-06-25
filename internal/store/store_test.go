@@ -331,9 +331,10 @@ func TestRecordedRequest_Deserialize(t *testing.T) {
 
 func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 	testCases := []struct {
-		name     string
-		request  RecordedRequest
-		expected string
+		name        string
+		request     RecordedRequest
+		expected    string
+		expectedErr bool
 	}{
 		{
 			name: "Request with test name header",
@@ -348,7 +349,8 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: "random test name",
+			expected:    "random test name",
+			expectedErr: false,
 		},
 		{
 			name: "Request with empty test name header",
@@ -363,7 +365,24 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: "f824dd099907ed4549822de827b075a7578baadebf08c5bc7303ead90a8f9ff7",
+			expected:    "f824dd099907ed4549822de827b075a7578baadebf08c5bc7303ead90a8f9ff7",
+			expectedErr: false,
+		},
+		{
+			name: "Request with invalid test name header",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Test-Name": []string{"../invalid_name"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			expected:    "",
+			expectedErr: true,
 		},
 		{
 			name: "Request without test name header",
@@ -379,13 +398,18 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: "fc060aea9a2bf35da16ed18c6be577ca64d0f91d681d5db385082df61ecf4ccf",
+			expected:    "fc060aea9a2bf35da16ed18c6be577ca64d0f91d681d5db385082df61ecf4ccf",
+			expectedErr: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := tc.request.GetRecordFileName()
+			actual, err := tc.request.GetRecordingFileName()
+			if tc.expectedErr {
+				require.Error(t, err)
+				return
+			}
 			require.Equal(t, tc.expected, actual, "GetRecordFileName() result mismatch")
 		})
 	}

@@ -92,15 +92,19 @@ func (r *RecordedRequest) ComputeSum() string {
 	return hashHex
 }
 
-// GetRecordFileName returns the record file name.
+// GetRecordingFileName returns the recording file name.
 // It prefers the value from the TEST_NAME header.
-// If the TEST_NAME header is not present or its value is empty, it falls back to computed SHA256 sum.
-func (r *RecordedRequest) GetRecordFileName() string {
+// It returns error when test name contains illegal sequence.
+// If the TEST_NAME header is not present, it falls back to computed SHA256 sum.
+func (r *RecordedRequest) GetRecordingFileName() (string, error) {
 	testName := r.Header.Get("Test-Name")
-	if testName != "" {
-		return testName
+	if strings.Contains(testName, "../") {
+		return "", fmt.Errorf("test name: %s contains illegal sequence '../'", testName)
 	}
-	return r.ComputeSum()
+	if testName != "" {
+		return testName, nil
+	}
+	return r.ComputeSum(), nil
 }
 
 // Serialize the request.
