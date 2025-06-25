@@ -70,7 +70,8 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 	fmt.Printf("Recording request: %s %s\n", req.Method, req.URL.String())
 
-	reqHash, err := r.recordRequest(req)
+	recReq, err := r.recordRequest(req)
+	fileName := recReq.GetRecordFileName()
 	if err != nil {
 		fmt.Printf("Error recording request: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error recording request: %v", err), http.StatusInternalServerError)
@@ -79,7 +80,7 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 
 	if req.Header.Get("Upgrade") == "websocket" {
 		fmt.Printf("Upgrading connection to websocket...\n")
-		r.proxyWebsocket(w, req, reqHash)
+		r.proxyWebsocket(w, req, fileName)
 		return
 	}
 
@@ -90,7 +91,7 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	err = r.recordResponse(resp, reqHash, respBody)
+	err = r.recordResponse(resp, fileName, respBody)
 
 	if err != nil {
 		fmt.Printf("Error recording response: %v\n", err)
@@ -99,10 +100,10 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 }
 
-func (r *RecordingHTTPSProxy) recordRequest(req *http.Request) (string, error) {
+func (r *RecordingHTTPSProxy) recordRequest(req *http.Request) (*store.RecordedRequest, error) {
 	recordedRequest, err := store.NewRecordedRequest(req, r.prevRequestSHA, *r.config)
 	if err != nil {
-		return "", err
+		return recordedRequest, err
 	}
 
 	// Redact headers by key
@@ -112,17 +113,13 @@ func (r *RecordingHTTPSProxy) recordRequest(req *http.Request) (string, error) {
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
 	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
 
-	reqHash, err := recordedRequest.ComputeSum()
-	if err != nil {
-		return "", err
-	}
-
-	recordPath := filepath.Join(r.recordingDir, reqHash+".req")
+	fileName := recordedRequest.GetRecordFileName()
+	recordPath := filepath.Join(r.recordingDir, fileName+".req")
 	err = os.WriteFile(recordPath, []byte(recordedRequest.Serialize()), 0644)
 	if err != nil {
-		return "", err
+		return recordedRequest, err
 	}
-	return reqHash, nil
+	return recordedRequest, nil
 }
 
 func (r *RecordingHTTPSProxy) proxyRequest(w http.ResponseWriter, req *http.Request) (*http.Response, []byte, error) {
@@ -172,7 +169,7 @@ func (r *RecordingHTTPSProxy) proxyRequest(w http.ResponseWriter, req *http.Requ
 	return resp, respBodyBytes, nil
 }
 
-func (r *RecordingHTTPSProxy) recordResponse(resp *http.Response, reqHash string, body []byte) error {
+func (r *RecordingHTTPSProxy) recordResponse(resp *http.Response, fileName string, body []byte) error {
 	recordedResponse, err := store.NewRecordedResponse(resp, body)
 	if err != nil {
 		return err
@@ -180,7 +177,7 @@ func (r *RecordingHTTPSProxy) recordResponse(resp *http.Response, reqHash string
 
 	recordedResponse.Body = r.redactor.Bytes(recordedResponse.Body)
 
-	recordPath := filepath.Join(r.recordingDir, reqHash+".resp")
+	recordPath := filepath.Join(r.recordingDir, fileName+".resp")
 	fmt.Printf("Writing response to: %s\n", recordPath)
 	err = os.WriteFile(recordPath, []byte(recordedResponse.Serialize()), 0644)
 	if err != nil {
@@ -209,7 +206,7 @@ func replaceRegex(s, regex, replacement string) string {
 	return re.ReplaceAllString(s, replacement)
 }
 
-func (r *RecordingHTTPSProxy) proxyWebsocket(w http.ResponseWriter, req *http.Request, reqHash string) {
+func (r *RecordingHTTPSProxy) proxyWebsocket(w http.ResponseWriter, req *http.Request, fileName string) {
 	conn, clientConn, err := r.upgradeConnectionToWebsocket(w, req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error proxying websocket: %v", err), http.StatusInternalServerError)
@@ -221,10 +218,10 @@ func (r *RecordingHTTPSProxy) proxyWebsocket(w http.ResponseWriter, req *http.Re
 	c := make(chan []byte)
 	quit := make(chan int)
 
-	go pumpWebsocket(clientConn, conn, c, quit, ">")
-	go pumpWebsocket(conn, clientConn, c, quit, "<")
+	go pumpWebsocket(clientConn, conn, c, quit, "[WS_MSG][C2S]")
+	go pumpWebsocket(conn, clientConn, c, quit, "[WS_MSG][S2C]")
 
-	recordPath := filepath.Join(r.recordingDir, reqHash+".websocket")
+	recordPath := filepath.Join(r.recordingDir, fileName+".websocket")
 	f, err := os.Create(recordPath)
 	if err != nil {
 		fmt.Printf("Error creating websocket recording file: %v\n", err)
@@ -262,8 +259,8 @@ func pumpWebsocket(src, dst *websocket.Conn, c chan []byte, quit chan int, prepe
 			quit <- 1
 			return
 		}
-		prefix := fmt.Sprintf("%s%d", prepend, cap(buf))
-		c <- append([]byte(prefix), buf...)
+		buf = append(buf, '\n')
+		c <- append([]byte(prepend), buf...)
 		err = dst.WriteMessage(msgType, buf)
 		if err != nil {
 			fmt.Printf("Error writing to websocket: %v\n", err)
@@ -286,6 +283,7 @@ func (r *RecordingHTTPSProxy) upgradeConnectionToWebsocket(w http.ResponseWriter
 		"Sec-Websocket-Extensions": true,
 		"Connection":               true,
 		"Upgrade":                  true,
+		"Test-Name":                true,
 	}
 	for k, v := range req.Header {
 		if _, ok := excludedHeaders[k]; ok {

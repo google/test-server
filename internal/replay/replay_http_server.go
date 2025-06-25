@@ -21,10 +21,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
 	"github.com/google/test-server/internal/store"
+	"github.com/gorilla/websocket"
 )
 
 type ReplayHTTPServer struct {
@@ -68,22 +70,29 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	fmt.Printf("Replaying request: %ss\n", redactedReq.Request)
+	fileName := redactedReq.GetRecordFileName()
+	if req.Header.Get("Upgrade") == "websocket" {
+		fmt.Printf("Upgrading connection to websocket...\n")
 
-	reqHash, err := redactedReq.ComputeSum()
-	if err != nil {
-		fmt.Printf("Error computing request sum: %v\n", err)
-		http.Error(w, fmt.Sprintf("Error computing request sum: %v", err), http.StatusInternalServerError)
+		chunks, err := r.loadWebsocketChunks(fileName)
+		if err != nil {
+			fmt.Printf("Error loading websocket response: %v\n", err)
+			http.Error(w, fmt.Sprintf("Error loading websocket response: %v", err), http.StatusInternalServerError)
+			return
+		}
+		fmt.Printf("Replaying websocket: %s\n", fileName)
+		r.proxyWebsocket(w, req, chunks)
 		return
 	}
-
-	resp, err := r.loadResponse(reqHash)
+	fmt.Printf("Replaying http request: %s\n", redactedReq.Request)
+	resp, err := r.loadResponse(fileName)
 	if err != nil {
 		fmt.Printf("Error loading response: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error loading response: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	err = r.writedResponse(w, resp)
+	err = r.writeResponse(w, resp)
 	if err != nil {
 		fmt.Printf("Error writing response: %v\n", err)
 		panic(err)
@@ -106,8 +115,8 @@ func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.Reco
 	return recordedRequest, nil
 }
 
-func (r *ReplayHTTPServer) loadResponse(sha string) (*store.RecordedResponse, error) {
-	responseFile := filepath.Join(r.recordingDir, sha+".resp")
+func (r *ReplayHTTPServer) loadResponse(fileName string) (*store.RecordedResponse, error) {
+	responseFile := filepath.Join(r.recordingDir, fileName+".resp")
 	fmt.Printf("loading response from : %s\n", responseFile)
 	responseData, err := os.ReadFile(responseFile)
 	if err != nil {
@@ -116,7 +125,7 @@ func (r *ReplayHTTPServer) loadResponse(sha string) (*store.RecordedResponse, er
 	return store.DeserializeResponse(responseData)
 }
 
-func (r *ReplayHTTPServer) writedResponse(w http.ResponseWriter, resp *store.RecordedResponse) error {
+func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.RecordedResponse) error {
 	for key, values := range resp.Header {
 		for _, value := range values {
 			if key == "Content-Length" || key == "Content-Encoding" {
@@ -130,4 +139,82 @@ func (r *ReplayHTTPServer) writedResponse(w http.ResponseWriter, resp *store.Rec
 
 	_, err := w.Write(resp.Body)
 	return err
+}
+
+func (r *ReplayHTTPServer) proxyWebsocket(w http.ResponseWriter, req *http.Request, chunks []string) {
+	clientConn, err := r.upgradeConnectionToWebsocket(w, req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error proxying websocket: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer clientConn.Close()
+	replayWebsocket(clientConn, chunks)
+}
+
+func (r *ReplayHTTPServer) loadWebsocketChunks(sha string) ([]string, error) {
+	responseFile := filepath.Join(r.recordingDir, sha+".websocket")
+	fmt.Printf("loading websocket response from : %s\n", responseFile)
+	responseData, err := os.ReadFile(responseFile)
+	var chunks []string
+	if err != nil {
+		fmt.Printf("Error loading websocket response: %v\n", err)
+		return chunks, err
+	}
+	chunks = strings.Split(string(responseData), "[WS_MSG]")
+	var cleanChunks []string
+	for _, chunk := range chunks {
+		trimmedChunk := strings.TrimSpace(chunk)
+		if trimmedChunk != "" {
+			cleanChunks = append(cleanChunks, trimmedChunk)
+		}
+	}
+	return cleanChunks, nil
+}
+
+func replayWebsocket(conn *websocket.Conn, chunks []string) {
+	for _, chunk := range chunks {
+		if strings.HasPrefix(chunk, "[C2S]") {
+			_, buf, err := conn.ReadMessage()
+			reqChunk := string(buf)
+			if err != nil {
+				fmt.Printf("Error reading from websocket: %v\n", err)
+				return
+			}
+
+			runes := []rune(chunk)
+			recChunk := string(runes[5:])
+			if reqChunk != recChunk {
+				fmt.Printf("input chunk mismatch\n Input chunk: %s\n Recorded chunk: %s\n", reqChunk, recChunk)
+				return
+			}
+		} else if strings.HasPrefix(chunk, "[S2C]") {
+			runes := []rune(chunk)
+			recChunk := string(runes[5:])
+			// Write binary message. (messageType=2)
+			err := conn.WriteMessage(2, []byte(recChunk))
+			if err != nil {
+				fmt.Printf("Error writing to websocket: %v\n", err)
+				return
+			}
+		} else {
+			fmt.Printf("Unreconginized chunk: %s", chunk)
+			return
+		}
+	}
+}
+
+func (r *ReplayHTTPServer) upgradeConnectionToWebsocket(w http.ResponseWriter, req *http.Request) (*websocket.Conn, error) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true // Allow all origins
+		},
+	}
+
+	clientConn, err := upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		return nil, err
+	}
+	return clientConn, err
 }

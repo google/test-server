@@ -85,11 +85,22 @@ func readBody(req *http.Request) ([]byte, error) {
 }
 
 // ComputeSum computes the SHA256 sum of a RecordedRequest.
-func (r *RecordedRequest) ComputeSum() (string, error) {
+func (r *RecordedRequest) ComputeSum() string {
 	serialized := r.Serialize()
 	hash := sha256.Sum256([]byte(serialized))
 	hashHex := hex.EncodeToString(hash[:])
-	return hashHex, nil
+	return hashHex
+}
+
+// GetRecordFileName returns the record file name.
+// It prefers the value from the TEST_NAME header.
+// If the TEST_NAME header is not present or its value is empty, it falls back to computed SHA256 sum.
+func (r *RecordedRequest) GetRecordFileName() string {
+	testName := r.Header.Get("Test-Name")
+	if testName != "" {
+		return testName
+	}
+	return r.ComputeSum()
 }
 
 // Serialize the request.
