@@ -329,6 +329,68 @@ func TestRecordedRequest_Deserialize(t *testing.T) {
 	}
 }
 
+func TestRecordedRequest_GetRecordFileName(t *testing.T) {
+	testCases := []struct {
+		name     string
+		request  RecordedRequest
+		expected string
+	}{
+		{
+			name: "Request with test name header",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Test-Name": []string{"random test name"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			expected: "random test name",
+		},
+		{
+			name: "Request with empty test name header",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Test-Name": []string{""},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			expected: "f824dd099907ed4549822de827b075a7578baadebf08c5bc7303ead90a8f9ff7",
+		},
+		{
+			name: "Request without test name header",
+			request: RecordedRequest{
+				Request: "GET / HTTP/1.1",
+				Header: http.Header{
+					"Accept":       []string{"application/xml"},
+					"Content-Type": []string{"application/json"},
+				},
+				Body:            []byte{},
+				PreviousRequest: HeadSHA,
+				ServerAddress:   "",
+				Port:            0,
+				Protocol:        "",
+			},
+			expected: "fc060aea9a2bf35da16ed18c6be577ca64d0f91d681d5db385082df61ecf4ccf",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := tc.request.GetRecordFileName()
+			require.Equal(t, tc.expected, actual, "GetRecordFileName() result mismatch")
+		})
+	}
+}
+
 type errorReader struct{}
 
 func (e *errorReader) Read(p []byte) (n int, err error) {
