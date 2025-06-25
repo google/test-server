@@ -92,6 +92,17 @@ func (r *RecordedRequest) ComputeSum() string {
 	return hashHex
 }
 
+// GetRecordFileName returns the record file name.
+// It prefers the value from the TEST_NAME header.
+// If the TEST_NAME header is not present or its value is empty, it falls back to computed SHA256 sum.
+func (r *RecordedRequest) GetRecordFileName() string {
+	testName := r.Header.Get("Test-Name")
+	if testName != "" {
+		return testName
+	}
+	return r.ComputeSum()
+}
+
 // Serialize the request.
 //
 // The serialization format is as follows:
