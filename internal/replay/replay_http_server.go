@@ -229,6 +229,7 @@ func replayWebsocket(conn *websocket.Conn, chunks []string) {
 			recChunk := string(runes[1:])
 			if reqChunk != recChunk {
 				fmt.Printf("input chunk mismatch\n Input chunk: %s\n Recorded chunk: %s\n", reqChunk, recChunk)
+				writeError(conn, "input chunk mismatch")
 				return
 			}
 		} else if strings.HasPrefix(chunk, "<") {
@@ -244,6 +245,17 @@ func replayWebsocket(conn *websocket.Conn, chunks []string) {
 			fmt.Printf("Unreconginized chunk: %s", chunk)
 			return
 		}
+	}
+}
+
+func writeError(conn *websocket.Conn, errMsg string) {
+	closeMessage := websocket.FormatCloseMessage(
+		websocket.CloseInternalServerErr,
+		errMsg,
+	)
+	err := conn.WriteMessage(websocket.CloseMessage, closeMessage)
+	if err != nil {
+		fmt.Printf("Failed to write error: %v\n", err)
 	}
 }
 
