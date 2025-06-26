@@ -70,16 +70,16 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 	fmt.Printf("Recording request: %s %s\n", req.Method, req.URL.String())
 
-	recReq, recErr := r.recordRequest(req)
-	if recErr != nil {
-		fmt.Printf("Error recording request: %v\n", recErr)
-		http.Error(w, fmt.Sprintf("Error recording request: %v", recErr), http.StatusInternalServerError)
+	recReq, err := r.recordRequest(req)
+	if err != nil {
+		fmt.Printf("Error recording request: %v\n", err)
+		http.Error(w, fmt.Sprintf("Error recording request: %v", err), http.StatusInternalServerError)
 		return
 	}
-	fileName, fileNameErr := recReq.GetRecordingFileName()
-	if fileNameErr != nil {
-		fmt.Printf("Invalid recording file name: %v\n", recErr)
-		http.Error(w, fmt.Sprintf("Invalid recording file name: %v", recErr), http.StatusInternalServerError)
+	fileName, err := recReq.GetRecordingFileName()
+	if err != nil {
+		fmt.Printf("Invalid recording file name: %v\n", err)
+		http.Error(w, fmt.Sprintf("Invalid recording file name: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -269,7 +269,7 @@ func pumpWebsocket(src, dst *websocket.Conn, c chan []byte, quit chan int, prepe
 			return
 		}
 		buf = append(buf, '\n')
-		prefix := fmt.Sprintf("%s%d", prepend, len(buf))
+		prefix := fmt.Sprintf("%s%d ", prepend, len(buf))
 		c <- append([]byte(prefix), buf...)
 		err = dst.WriteMessage(msgType, buf)
 		if err != nil {

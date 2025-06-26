@@ -148,6 +148,23 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 	return err
 }
 
+func extractNumber(i *int, content string) (int, error) {
+	numStart := *i
+	for *i < len(content) && unicode.IsDigit(rune(content[*i])) {
+		*i++
+	}
+	numEnd := *i
+	if numStart == numEnd {
+		return 0, fmt.Errorf("missing chunk length after prefix at position %d", numStart-1)
+	}
+	numStr := content[numStart:numEnd]
+	num, err := strconv.Atoi(numStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid chunk length '%s': %w", numStr, err)
+	}
+	return num, nil
+}
+
 func (r *ReplayHTTPServer) proxyWebsocket(w http.ResponseWriter, req *http.Request, chunks []string) {
 	clientConn, err := r.upgradeConnectionToWebsocket(w, req)
 	if err != nil {
@@ -178,23 +195,15 @@ func (r *ReplayHTTPServer) loadWebsocketChunks(sha string) ([]string, error) {
 		}
 		i++ // Move cursor past prefix.
 
-		// Extracts chunk length
-		numStart := i
-		for i < len(response) && unicode.IsDigit(rune(response[i])) {
-			i++
-		}
-		numEnd := i
-		if numStart == numEnd {
-			return nil, fmt.Errorf("missing chunk length after prefix at position %d", numStart-1)
-		}
-		numStr := response[numStart:numEnd]
-		num, err := strconv.Atoi(numStr)
+		// Extracts chunk length number
+		num, err := extractNumber(&i, response)
+		i++ // Move cursor to skip the whitespace between the number and the actual chunk.
 		if err != nil {
-			return nil, fmt.Errorf("invalid chunk length '%s': %w", numStr, err)
+			return nil, fmt.Errorf("failed to extract number %v", err)
 		}
 
 		// Extracts chunk
-		chunkStart := numEnd
+		chunkStart := i
 		chunkEnd := chunkStart + num
 		if chunkEnd > len(response) {
 			return nil, fmt.Errorf("chunk length %d at position %d exceeds response bounds", chunkEnd, chunkStart)
