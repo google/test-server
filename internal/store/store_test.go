@@ -38,12 +38,11 @@ func TestRecordedRequest_Serialize(t *testing.T) {
 				Request:         "",
 				Header:          http.Header{},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: HeadSHA + "\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\n\n\n\n",
+			expected: "Server Address: \nPort: 0\nProtocol: \n********************************************************************************\n\n\n\n",
 		},
 		{
 			name: "Request with headers",
@@ -54,12 +53,11 @@ func TestRecordedRequest_Serialize(t *testing.T) {
 					"Content-Type": []string{"application/json"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: HeadSHA + "\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\nGET / HTTP/1.1\nAccept: application/xml\nContent-Type: application/json\n\n\n",
+			expected: "Server Address: \nPort: 0\nProtocol: \n********************************************************************************\nGET / HTTP/1.1\nAccept: application/xml\nContent-Type: application/json\n\n\n",
 		},
 		{
 			name: "Request with body",
@@ -67,25 +65,11 @@ func TestRecordedRequest_Serialize(t *testing.T) {
 				Request:         "POST /data HTTP/1.1",
 				Header:          http.Header{},
 				Body:            []byte("{\"key\": \"value\"}"),
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: HeadSHA + "\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\nPOST /data HTTP/1.1\n\n\n{\"key\": \"value\"}",
-		},
-		{
-			name: "Request with previous request SHA256 sum",
-			request: RecordedRequest{
-				Request:         "GET / HTTP/1.1",
-				Header:          http.Header{},
-				Body:            []byte{},
-				PreviousRequest: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-				ServerAddress:   "",
-				Port:            0,
-				Protocol:        "",
-			},
-			expected: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\nGET / HTTP/1.1\n\n\n",
+			expected: "Server Address: \nPort: 0\nProtocol: \n********************************************************************************\nPOST /data HTTP/1.1\n\n\n{\"key\": \"value\"}",
 		},
 	}
 
@@ -121,7 +105,6 @@ func TestNewRecordedRequest(t *testing.T) {
 				Request:         "POST http://example.com/test HTTP/1.1",
 				Header:          http.Header{"Content-Type": []string{"application/json"}},
 				Body:            []byte("test body"),
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "example.com",
 				Port:            443,
 				Protocol:        "https",
@@ -143,7 +126,6 @@ func TestNewRecordedRequest(t *testing.T) {
 				Request:         "GET http://example.com/test HTTP/1.1",
 				Header:          http.Header{},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "example.com",
 				Port:            443,
 				Protocol:        "https",
@@ -168,7 +150,7 @@ func TestNewRecordedRequest(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			recordedRequest, err := NewRecordedRequest(tc.request, HeadSHA, tc.cfg)
+			recordedRequest, err := NewRecordedRequest(tc.request, tc.cfg)
 
 			if tc.expectedErr {
 				require.Error(t, err)
@@ -179,7 +161,6 @@ func TestNewRecordedRequest(t *testing.T) {
 			require.Equal(t, tc.expected.Request, recordedRequest.Request)
 			require.Equal(t, tc.expected.Header, recordedRequest.Header)
 			require.Equal(t, tc.expected.Body, recordedRequest.Body)
-			require.Equal(t, tc.expected.PreviousRequest, recordedRequest.PreviousRequest)
 		})
 	}
 }
@@ -200,7 +181,6 @@ func TestRecordedRequest_RedactHeaders(t *testing.T) {
 					"Content-Type": []string{"application/json"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -220,7 +200,6 @@ func TestRecordedRequest_RedactHeaders(t *testing.T) {
 					"Authorization": []string{"Bearer token"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -238,7 +217,6 @@ func TestRecordedRequest_RedactHeaders(t *testing.T) {
 					"Accept": []string{"application/xml"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -257,7 +235,6 @@ func TestRecordedRequest_RedactHeaders(t *testing.T) {
 					"Content-Type": []string{"application/json"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -289,7 +266,6 @@ func TestRecordedRequest_Deserialize(t *testing.T) {
 				Request:         "GET / HTTP/1.1",
 				Header:          http.Header{"Accept": []string{"application/xml"}, "Content-Type": []string{"application/json"}},
 				Body:            []byte("{\"key\": \"value\"}"),
-				PreviousRequest: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
 				ServerAddress:   "example.com",
 				Port:            8080,
 				Protocol:        "http",
@@ -344,7 +320,6 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 					"Test-Name": []string{"random test name"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -360,7 +335,6 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 					"Test-Name": []string{""},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -376,7 +350,6 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 					"Test-Name": []string{"../invalid_name"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
@@ -393,7 +366,6 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 					"Content-Type": []string{"application/json"},
 				},
 				Body:            []byte{},
-				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
