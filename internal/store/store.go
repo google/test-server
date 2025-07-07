@@ -30,21 +30,17 @@ import (
 	"github.com/google/test-server/internal/config"
 )
 
-// A sha of an invalid RecordRequest to be used as the head of all chains.
-const HeadSHA = "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d"
-
 type RecordedRequest struct {
-	Request         string
-	Header          http.Header
-	Body            []byte
-	PreviousRequest string // The sha256 sum of the previous request in the chain.
-	ServerAddress   string
-	Port            int64
-	Protocol        string
+	Request         string		
+	Header          http.Header 
+	Body            []byte 		
+	ServerAddress   string 		
+	Port            int64		
+	Protocol        string		
 }
 
 // NewRecordedRequest creates a RecordedRequest from an http.Request.
-func NewRecordedRequest(req *http.Request, previousRequest string, cfg config.EndpointConfig) (*RecordedRequest, error) {
+func NewRecordedRequest(req *http.Request, cfg config.EndpointConfig) (*RecordedRequest, error) {
 	// Read the body.
 	body, err := readBody(req)
 	if err != nil {
@@ -62,7 +58,6 @@ func NewRecordedRequest(req *http.Request, previousRequest string, cfg config.En
 		Request:         request,
 		Header:          header,
 		Body:            body,
-		PreviousRequest: previousRequest,
 		ServerAddress:   cfg.TargetHost,
 		Port:            cfg.TargetPort,
 		Protocol:        cfg.TargetType,
@@ -110,8 +105,7 @@ func (r *RecordedRequest) GetRecordingFileName() (string, error) {
 // Serialize the request.
 //
 // The serialization format is as follows:
-//   - The first line is the sha256 of the previous request as a hex string.
-//   - Next is the server address.
+//   - The first line is the server address.
 //   - Next is the port.
 //   - Next is the protocol.
 //   - Next is a line of 80 asterisks.
@@ -120,11 +114,7 @@ func (r *RecordedRequest) GetRecordingFileName() (string, error) {
 //   - Next, there are 2 empty lines.
 //   - The rest of the file is the body content.
 func (r *RecordedRequest) Serialize() string {
-	var builder strings.Builder
-
-	// Format the SHA256 sum of the previous request.
-	builder.WriteString(r.PreviousRequest)
-	builder.WriteString("\n")
+	var builder bytes.Buffer
 
 	builder.WriteString(fmt.Sprintf("Server Address: %s\n", r.ServerAddress))
 
@@ -152,7 +142,7 @@ func (r *RecordedRequest) Serialize() string {
 	}
 
 	builder.WriteString("\n\n")
-	builder.WriteString(string(r.Body))
+	builder.Write(r.Body)
 
 	return builder.String()
 }
@@ -163,9 +153,6 @@ func Deserialize(data string) (*RecordedRequest, error) {
 	if len(lines) < 6 {
 		return nil, fmt.Errorf("invalid serialized data: not enough lines")
 	}
-
-	previousRequest := lines[0]
-
 	serverAddress := strings.TrimPrefix(lines[1], "Server Address: ")
 	portString := strings.TrimPrefix(lines[2], "Port: ")
 	protocol := strings.TrimPrefix(lines[3], "Protocol: ")
@@ -207,7 +194,6 @@ func Deserialize(data string) (*RecordedRequest, error) {
 		Request:         request,
 		Header:          headers,
 		Body:            body,
-		PreviousRequest: previousRequest,
 		ServerAddress:   serverAddress,
 		Port:            int64(port),
 		Protocol:        protocol,
