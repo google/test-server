@@ -339,7 +339,7 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 				Port:            0,
 				Protocol:        "",
 			},
-			expected:    "f824dd099907ed4549822de827b075a7578baadebf08c5bc7303ead90a8f9ff7",
+			expected:    "b1c71b9c6adb2be16273a2f468e163f4110f73909546430cb19c40c2d61fdc4e",
 			expectedErr: false,
 		},
 		{
@@ -370,7 +370,7 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 				Port:            0,
 				Protocol:        "",
 			},
-			expected:    "fc060aea9a2bf35da16ed18c6be577ca64d0f91d681d5db385082df61ecf4ccf",
+			expected:    "aa6623bf83220756d0bb2ec0cfd30bfae64d44feea5c3f48ee28d1988e9579bf",
 			expectedErr: false,
 		},
 	}

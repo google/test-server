@@ -145,10 +145,7 @@ func (r *ReplayHTTPServer) loadResponse(fileName string, shaSum string) (*store.
 			}
 			return nil, fmt.Errorf("error while reading file: %w", err)
 		}
-
-		// Trim whitespace, including the trailing newline, from the line.
 		trimmedLine := strings.TrimSpace(line)
-
 		parts := strings.Fields(trimmedLine)
 		if len(parts) != 2 {
 			continue
