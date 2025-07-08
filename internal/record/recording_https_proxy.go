@@ -97,12 +97,13 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 
 	err = r.recordResponse(recReq, resp, fileName, respBody)
-
 	if err != nil {
 		fmt.Printf("Error recording response: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error recording response: %v", err), http.StatusInternalServerError)
 		return
 	}
+	// Update previous request's sha sum.
+	r.prevRequestSHA = shaSum
 }
 
 func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedRequest, error) {
@@ -212,8 +213,6 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	if err != nil {
 		return err
 	}
-	// Update previous request's sha sum.
-	r.prevRequestSHA = shaSum
 	return nil
 }
 
