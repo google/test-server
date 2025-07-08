@@ -349,7 +349,7 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 				Port:            0,
 				Protocol:        "",
 			},
-			expected:    "random test name",
+			expected:    "random_test_name",
 			expectedErr: false,
 		},
 		{
