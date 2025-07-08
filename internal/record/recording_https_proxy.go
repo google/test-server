@@ -32,6 +32,7 @@ import (
 )
 
 type RecordingHTTPSProxy struct {
+	prevRequestSHA string
 	config         *config.EndpointConfig
 	recordingDir   string
 	redactor       *redact.Redact
@@ -39,10 +40,15 @@ type RecordingHTTPSProxy struct {
 
 func NewRecordingHTTPSProxy(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *RecordingHTTPSProxy {
 	return &RecordingHTTPSProxy{
+		prevRequestSHA: store.HeadSHA,
 		config:         cfg,
 		recordingDir:   recordingDir,
 		redactor:       redactor,
 	}
+}
+
+func (r *RecordingHTTPSProxy) ResetChain() {
+	r.prevRequestSHA = store.HeadSHA
 }
 
 func (r *RecordingHTTPSProxy) Start() error {
@@ -100,7 +106,7 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 }
 
 func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedRequest, error) {
-	recordedRequest, err := store.NewRecordedRequest(req, *r.config)
+	recordedRequest, err := store.NewRecordedRequest(req, r.prevRequestSHA, *r.config)
 	if err != nil {
 		return recordedRequest, err
 	}

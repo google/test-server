@@ -34,6 +34,7 @@ import (
 )
 
 type ReplayHTTPServer struct {
+	prevRequestSHA string
 	config         *config.EndpointConfig
 	recordingDir   string
 	redactor       *redact.Redact
@@ -41,6 +42,7 @@ type ReplayHTTPServer struct {
 
 func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *ReplayHTTPServer {
 	return &ReplayHTTPServer{
+		prevRequestSHA: store.HeadSHA,
 		config:         cfg,
 		recordingDir:   recordingDir,
 		redactor:       redactor,
@@ -108,7 +110,7 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 }
 
 func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.RecordedRequest, error) {
-	recordedRequest, err := store.NewRecordedRequest(req, *r.config)
+	recordedRequest, err := store.NewRecordedRequest(req, r.prevRequestSHA, *r.config)
 	if err != nil {
 		return nil, err
 	}
