@@ -95,8 +95,8 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 		http.Error(w, fmt.Sprintf("Error proxying request: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	err = r.recordResponse(recReq, resp, fileName, respBody)
+	shaSum := recReq.ComputeSum()
+	err = r.recordResponse(recReq, resp, fileName, shaSum, respBody)
 	if err != nil {
 		fmt.Printf("Error recording response: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error recording response: %v", err), http.StatusInternalServerError)
@@ -168,14 +168,12 @@ func (r *RecordingHTTPSProxy) proxyRequest(w http.ResponseWriter, req *http.Requ
 	return resp, respBodyBytes, nil
 }
 
-func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp *http.Response, fileName string, body []byte) error {
+func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp *http.Response, fileName string, shaSum string, body []byte) error {
 	recordedResponse, err := store.NewRecordedResponse(resp, body)
 	if err != nil {
 		return err
 	}
 	recordPath := filepath.Join(r.recordingDir, fileName+".http.log")
-	shaSum := recReq.ComputeSum()
-
 
 	var fileMode int
 	if fileName == shaSum {
