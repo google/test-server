@@ -175,8 +175,16 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	recordPath := filepath.Join(r.recordingDir, fileName+".http.log")
 	shaSum := recReq.ComputeSum()
 
-	// Open the file in append mode, create it if it doesn't exist.
-	file, err := os.OpenFile(recordPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	var fileMode int
+	if fileName == shaSum {
+		// This is a single-request file, so overwrite it completely.
+		fileMode = os.O_TRUNC
+	} else {
+		// This file groups the requests by test-name, so append to it.
+		fileMode = os.O_APPEND
+	}
+	file, err := os.OpenFile(recordPath, fileMode|os.O_CREATE|os.O_WRONLY , 0644)
 	if err != nil {
 		return err
 	}
@@ -204,7 +212,8 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	if err != nil {
 		return err
 	}
-
+	// Update previous request's sha sum.
+	r.prevRequestSHA = shaSum
 	return nil
 }
 

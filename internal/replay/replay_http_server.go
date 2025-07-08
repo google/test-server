@@ -107,6 +107,12 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		fmt.Printf("Error writing response: %v\n", err)
 		panic(err)
 	}
+	
+	if fileName == shaSum {
+		r.ResetChain
+	}
+	// Update previous request's sha sum.
+	r.prevRequestSHA = shaSum
 }
 
 func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.RecordedRequest, error) {

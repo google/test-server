@@ -33,13 +33,13 @@ import (
 const HeadSHA = "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d"
 
 type RecordedRequest struct {
-	Request         string		
-	Header          http.Header 
+	Request         string
+	Header          http.Header
 	Body            []byte
-	PreviousRequest string // The sha256 sum of the previous request in the chain. 		
-	ServerAddress   string 		
-	Port            int64		
-	Protocol        string		
+	PreviousRequest string // The sha256 sum of the previous request in the chain.
+	ServerAddress   string
+	Port            int64
+	Protocol        string
 }
 
 // NewRecordedRequest creates a RecordedRequest from an http.Request.
@@ -101,7 +101,8 @@ func (r *RecordedRequest) GetRecordingFileName() (string, error) {
 		return "", fmt.Errorf("test name: %s contains illegal sequence '../'", testName)
 	}
 	if testName != "" {
-		return testName, nil
+		fileName := strings.ReplaceAll(testName, " ", "_")
+		return fileName, nil
 	}
 	return r.ComputeSum(), nil
 }
@@ -119,7 +120,7 @@ func (r *RecordedRequest) GetRecordingFileName() (string, error) {
 //   - Next, there are 2 empty lines.
 //   - The rest of the file is the body content.
 func (r *RecordedRequest) Serialize() string {
-	var builder bytes.Buffer
+	var builder strings.Builder
 
 	// Format the SHA256 sum of the previous request.
 	builder.WriteString(r.PreviousRequest)
@@ -151,7 +152,7 @@ func (r *RecordedRequest) Serialize() string {
 	}
 
 	builder.WriteString("\n\n")
-	builder.Write(r.Body)
+	builder.WriteString(string(r.Body))
 
 	return builder.String()
 }
