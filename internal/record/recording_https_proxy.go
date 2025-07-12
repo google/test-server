@@ -33,6 +33,7 @@ import (
 
 type RecordingHTTPSProxy struct {
 	prevRequestSHA string
+	seenFiles	   map[string]struct{}
 	config         *config.EndpointConfig
 	recordingDir   string
 	redactor       *redact.Redact
@@ -41,6 +42,7 @@ type RecordingHTTPSProxy struct {
 func NewRecordingHTTPSProxy(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *RecordingHTTPSProxy {
 	return &RecordingHTTPSProxy{
 		prevRequestSHA: store.HeadSHA,
+		seenFiles: 		make(map[string]struct{}),
 		config:         cfg,
 		recordingDir:   recordingDir,
 		redactor:       redactor,
@@ -82,6 +84,10 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 		http.Error(w, fmt.Sprintf("Invalid recording file name: %v", err), http.StatusInternalServerError)
 		return
 	}
+	if _, ok := r.seenFiles[fileName]; !ok {
+		// Reset to HeadSHA when first time seen a request from the given file.
+		recReq.PreviousRequest=store.HeadSHA
+	}
 
 	if req.Header.Get("Upgrade") == "websocket" {
 		fmt.Printf("Upgrading connection to websocket...\n")
@@ -102,8 +108,8 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 		http.Error(w, fmt.Sprintf("Error recording response: %v", err), http.StatusInternalServerError)
 		return
 	}
-	// Update previous request's sha sum.
 	r.prevRequestSHA = shaSum
+	r.seenFiles[fileName] = struct{}{}
 }
 
 func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedRequest, error) {
@@ -175,12 +181,10 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	}
 	recordPath := filepath.Join(r.recordingDir, fileName+".http.log")
 
-	var fileMode int
-	if fileName == shaSum {
-		// This is a single-request file, so overwrite it completely.
-		fileMode = os.O_TRUNC
-	} else {
-		// This file groups the requests by test-name, so append to it.
+	// Default to overwriting the file, assuming it's a new file to record.
+	fileMode := os.O_TRUNC
+	// If we've seen requests with the same file name before, change the mode to append.
+	if _, ok := r.seenFiles[fileName]; ok {
 		fileMode = os.O_APPEND
 	}
 	file, err := os.OpenFile(recordPath, fileMode|os.O_CREATE|os.O_WRONLY , 0644)

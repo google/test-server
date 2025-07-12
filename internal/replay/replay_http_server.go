@@ -35,6 +35,7 @@ import (
 
 type ReplayHTTPServer struct {
 	prevRequestSHA string
+	seenFiles	   map[string]struct{}
 	config         *config.EndpointConfig
 	recordingDir   string
 	redactor       *redact.Redact
@@ -43,6 +44,7 @@ type ReplayHTTPServer struct {
 func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *ReplayHTTPServer {
 	return &ReplayHTTPServer{
 		prevRequestSHA: store.HeadSHA,
+		seenFiles: 		make(map[string]struct{}),
 		config:         cfg,
 		recordingDir:   recordingDir,
 		redactor:       redactor,
@@ -80,6 +82,10 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		http.Error(w, fmt.Sprintf("Invalid recording file name: %v", err), http.StatusInternalServerError)
 		return
 	}
+	if _, ok := r.seenFiles[fileName]; !ok {
+		// Reset to HeadSHA when first time seen request from the given file.
+		redactedReq.PreviousRequest=store.HeadSHA
+	}
 	if req.Header.Get("Upgrade") == "websocket" {
 		fmt.Printf("Upgrading connection to websocket...\n")
 
@@ -107,8 +113,8 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		fmt.Printf("Error writing response: %v\n", err)
 		panic(err)
 	}
-	// Update previous request's sha sum.
 	r.prevRequestSHA = shaSum
+	r.seenFiles[fileName] = struct{}{}
 }
 
 func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.RecordedRequest, error) {
@@ -158,24 +164,26 @@ func (r *ReplayHTTPServer) loadResponse(fileName string, shaSum string) (*store.
 		fileKey := parts[0]
 		sizeStr := parts[1]
 
-		// 3. Check if the key on this line matches our target shaSum.
-		if fileKey == expectedKey {
-			size, err := strconv.Atoi(sizeStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid size format on delimiter line: '%s'", trimmedLine)
-			}
-			fmt.Printf("Bytes to load: %d\n", size)
-			
-			if size < 0 {
-				return nil, fmt.Errorf("invalid negative size on delimiter line: '%s'", trimmedLine)
-			}
+		size, err := strconv.Atoi(sizeStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid size format on delimiter line: '%s'", trimmedLine)
+		}
+		fmt.Printf("Bytes to load: %d\n", size)
+		if size < 0 {
+			return nil, fmt.Errorf("invalid negative size on delimiter line: '%s'", trimmedLine)
+		}
 
-			// 4. We can read the exact number of bytes for the payload.
-			data := make([]byte, size)
-			if _, err := io.ReadFull(reader, data); err != nil {
-				return nil, fmt.Errorf("failed to read %d bytes after delimiter: %w", size, err)
-			}
+		// 3. Read the exact number of bytes for the payload.
+		data := make([]byte, size)
+		if _, err := io.ReadFull(reader, data); err != nil {
+			return nil, fmt.Errorf("failed to read %d bytes after delimiter: %w", size, err)
+		}
+
+		// 4. Return the response when it matches our target shaSum.
+		if fileKey == expectedKey {
 			return store.DeserializeResponse(data)
+		} else {
+			continue
 		}
 	}
 }
