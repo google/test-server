@@ -108,7 +108,9 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 		http.Error(w, fmt.Sprintf("Error recording response: %v", err), http.StatusInternalServerError)
 		return
 	}
-	r.prevRequestSHA = shaSum
+	if (fileName != shaSum) {
+		r.prevRequestSHA = shaSum
+	}
 	r.seenFiles[fileName] = struct{}{}
 }
 

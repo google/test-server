@@ -113,7 +113,9 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		fmt.Printf("Error writing response: %v\n", err)
 		panic(err)
 	}
-	r.prevRequestSHA = shaSum
+	if (fileName != shaSum) {
+		r.prevRequestSHA = shaSum
+	}
 	r.seenFiles[fileName] = struct{}{}
 }
 
