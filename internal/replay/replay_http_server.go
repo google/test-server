@@ -230,7 +230,7 @@ func (r *ReplayHTTPServer) proxyWebsocket(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	defer clientConn.Close()
-	replayWebsocket(clientConn, chunks)
+	r.replayWebsocket(clientConn, chunks)
 }
 
 func (r *ReplayHTTPServer) loadWebsocketChunks(fileName string) ([]string, error) {
@@ -273,11 +273,11 @@ func (r *ReplayHTTPServer) loadWebsocketChunks(fileName string) ([]string, error
 	return chunks, nil
 }
 
-func replayWebsocket(conn *websocket.Conn, chunks []string) {
+func (r *ReplayHTTPServer) replayWebsocket(conn *websocket.Conn, chunks []string) {
 	for _, chunk := range chunks {
 		if strings.HasPrefix(chunk, ">") {
 			_, buf, err := conn.ReadMessage()
-			reqChunk := string(buf)
+			reqChunk := r.redactor.String(string(buf))
 			if err != nil {
 				fmt.Printf("Error reading from websocket: %v\n", err)
 				return

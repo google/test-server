@@ -251,8 +251,8 @@ func (r *RecordingHTTPSProxy) proxyWebsocket(w http.ResponseWriter, req *http.Re
 	c := make(chan []byte)
 	quit := make(chan int)
 
-	go pumpWebsocket(clientConn, conn, c, quit, ">")
-	go pumpWebsocket(conn, clientConn, c, quit, "<")
+	go r.pumpWebsocket(clientConn, conn, c, quit, ">")
+	go r.pumpWebsocket(conn, clientConn, c, quit, "<")
 
 	recordPath := filepath.Join(r.recordingDir, fileName+".websocket.log")
 	f, err := os.Create(recordPath)
@@ -280,7 +280,7 @@ func (r *RecordingHTTPSProxy) proxyWebsocket(w http.ResponseWriter, req *http.Re
 	}
 }
 
-func pumpWebsocket(src, dst *websocket.Conn, c chan []byte, quit chan int, prepend string) {
+func (r *RecordingHTTPSProxy) pumpWebsocket(src, dst *websocket.Conn, c chan []byte, quit chan int, prepend string) {
 	for {
 		msgType, buf, err := src.ReadMessage()
 		if err != nil {
@@ -293,8 +293,9 @@ func pumpWebsocket(src, dst *websocket.Conn, c chan []byte, quit chan int, prepe
 			return
 		}
 		buf = append(buf, '\n')
-		prefix := fmt.Sprintf("%s%d ", prepend, len(buf))
-		c <- append([]byte(prefix), buf...)
+		redactedBuf := r.redactor.Bytes(buf)
+		prefix := fmt.Sprintf("%s%d ", prepend, len(redactedBuf))
+		c <- append([]byte(prefix), redactedBuf...)
 		err = dst.WriteMessage(msgType, buf)
 		if err != nil {
 			fmt.Printf("Error writing to websocket: %v\n", err)
