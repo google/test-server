@@ -43,7 +43,7 @@ test-server record --config <CONFIG_FILE> --recording-dir <RECORDING_DIR>
 This runs test-server as a reverse proxy, with all interactions being saved to files under <RECORDING_DIR>.
 
 
-## Running in replay mode
+### Running in replay mode
 
 To start test-server in replay mode invoke:
 
@@ -53,3 +53,13 @@ test-server replay --config <CONFIG_FILE> --recording-dir <RECORDING_DIR>
 
 This will have test-server listen on the local endpoints and respond to requests with the recorded responses.
 Requests that were not recorded will be answered with an internal server error.
+
+
+## Implementation
+
+This library is implemented as a Go Binary that can be run as a standalone executable.
+
+
+### SDKs
+
+This repository also defines a TypeScript SDK which wraps around the Go Binary and provides a usability layer for TS projects by introducing convenience methods to start and stop the test-server.
