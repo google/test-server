@@ -194,7 +194,7 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 
 	var recordInteraction store.RecordInteraction
 	recordInteraction.Request = recReq
-	recordInteraction.ShaSum = shaSum
+	recordInteraction.SHASum = shaSum
 	recordInteraction.Response = recordedResponse
 
 	recordFile.Interactions = append(recordFile.Interactions, &recordInteraction)

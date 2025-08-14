@@ -36,7 +36,7 @@ const HeadSHA = "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4
 // Represents a single interaction, request and response in a replay.
 type RecordInteraction struct {
 	Request  *RecordedRequest  `json:"request,omitempty"`
-	ShaSum   string            `json:"shaSum,omitempty"`
+	SHASum   string            `json:"shaSum,omitempty"`
 	Response *RecordedResponse `json:"response,omitempty"`
 }
 

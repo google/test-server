@@ -164,7 +164,7 @@ func (r *ReplayHTTPServer) loadResponse(fileName string, shaSum string) (*store.
 		if interaction.Request.PreviousRequest == shaSum {
 			return interaction.Response, nil
 		}
-		if interaction.ShaSum == shaSum {
+		if interaction.SHASum == shaSum {
 			return interaction.Response, nil
 		}
 	}
