@@ -17,6 +17,7 @@ limitations under the License.
 package redact
 
 import (
+	"encoding/json"
 	"regexp"
 	"strings"
 )
@@ -52,14 +53,12 @@ func NewRedact(secrets []string) (*Redact, error) {
 }
 
 // Headers redacts the secrets in the values of the http.Header.
-func (r *Redact) Headers(headers map[string][]string) {
+func (r *Redact) Headers(headers map[string]string) {
 	if r == nil || r.regex == nil {
 		return // No redactor or no secrets configured
 	}
-	for name, values := range headers {
-		for i, value := range values {
-			headers[name][i] = r.regex.ReplaceAllString(value, REDACTED)
-		}
+	for name, value := range headers {
+		headers[name] = r.regex.ReplaceAllString(value, REDACTED)
 	}
 }
 
@@ -80,4 +79,25 @@ func (r *Redact) Bytes(input []byte) []byte {
 		return nil // Return nil if input is nil
 	}
 	return r.regex.ReplaceAll(input, []byte(REDACTED))
+}
+
+func (r *Redact) Map(input map[string]any) map[string]any {
+	if r == nil || r.regex == nil {
+		return input // No redactor or no secrets configured
+	}
+	if input == nil {
+		return nil // Return nil if input is nil
+	}
+	jsonBytes, err := json.Marshal(input)
+	if err != nil {
+		return nil
+	}
+	redactedJsonBytes := r.Bytes(jsonBytes)
+	var redactedMap map[string]any
+	err = json.Unmarshal(redactedJsonBytes, &redactedMap)
+	if err != nil {
+		return nil
+	}
+
+	return redactedMap
 }

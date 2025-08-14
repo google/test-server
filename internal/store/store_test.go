@@ -36,56 +36,56 @@ func TestRecordedRequest_Serialize(t *testing.T) {
 			name: "Empty request",
 			request: RecordedRequest{
 				Request:         "",
-				Header:          http.Header{},
-				Body:            []byte{},
+				Headers:         map[string]string{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: HeadSHA + "\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\n\n\n\n",
+			expected: "{\n  \"previousRequest\": \"b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d\"\n}",
 		},
 		{
 			name: "Request with headers",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Accept":       []string{"application/xml"},
-					"Content-Type": []string{"application/json"},
+				Headers: map[string]string{
+					"Accept":       "application/xml",
+					"Content-Type": "application/json",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: HeadSHA + "\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\nGET / HTTP/1.1\nAccept: application/xml\nContent-Type: application/json\n\n\n",
+			expected: "{\n  \"request\": \"GET / HTTP/1.1\",\n  \"headers\": {\n    \"Accept\": \"application/xml\",\n    \"Content-Type\": \"application/json\"\n  },\n  \"previousRequest\": \"b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d\"\n}",
 		},
 		{
 			name: "Request with body",
 			request: RecordedRequest{
 				Request:         "POST /data HTTP/1.1",
-				Header:          http.Header{},
-				Body:            []byte("{\"key\": \"value\"}"),
+				Headers:         map[string]string{},
+				BodySegments:    []map[string]any{{"key": "value"}},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: HeadSHA + "\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\nPOST /data HTTP/1.1\n\n\n{\"key\": \"value\"}",
+			expected: "{\n  \"request\": \"POST /data HTTP/1.1\",\n  \"bodySegments\": [\n    {\n      \"key\": \"value\"\n    }\n  ],\n  \"previousRequest\": \"b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d\"\n}",
 		},
 		{
 			name: "Request with previous request SHA256 sum",
 			request: RecordedRequest{
 				Request:         "GET / HTTP/1.1",
-				Header:          http.Header{},
-				Body:            []byte{},
+				Headers:         map[string]string{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20\nServer Address: \nPort: 0\nProtocol: \n********************************************************************************\nGET / HTTP/1.1\n\n\n",
+			expected: "{\n  \"request\": \"GET / HTTP/1.1\",\n  \"previousRequest\": \"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20\"\n}",
 		},
 	}
 
@@ -108,7 +108,7 @@ func TestNewRecordedRequest(t *testing.T) {
 		{
 			name: "Test with body",
 			request: func() *http.Request {
-				req, _ := http.NewRequest("POST", "http://example.com/test", bytes.NewBuffer([]byte("test body")))
+				req, _ := http.NewRequest("POST", "http://example.com/test", bytes.NewBuffer([]byte("{\"test body\": \"\"}")))
 				req.Header.Set("Content-Type", "application/json")
 				return req
 			}(),
@@ -119,8 +119,8 @@ func TestNewRecordedRequest(t *testing.T) {
 			},
 			expected: &RecordedRequest{
 				Request:         "POST http://example.com/test HTTP/1.1",
-				Header:          http.Header{"Content-Type": []string{"application/json"}},
-				Body:            []byte("test body"),
+				Headers:         map[string]string{"Content-Type": "application/json"},
+				BodySegments:    []map[string]any{{"test body": ""}},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "example.com",
 				Port:            443,
@@ -141,8 +141,8 @@ func TestNewRecordedRequest(t *testing.T) {
 			},
 			expected: &RecordedRequest{
 				Request:         "GET http://example.com/test HTTP/1.1",
-				Header:          http.Header{},
-				Body:            []byte{},
+				Headers:         map[string]string{},
+				BodySegments:    []map[string]any{{}},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "example.com",
 				Port:            443,
@@ -177,8 +177,8 @@ func TestNewRecordedRequest(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected.Request, recordedRequest.Request)
-			require.Equal(t, tc.expected.Header, recordedRequest.Header)
-			require.Equal(t, tc.expected.Body, recordedRequest.Body)
+			require.Equal(t, tc.expected.Headers, recordedRequest.Headers)
+			require.Equal(t, tc.expected.BodySegments, recordedRequest.BodySegments)
 			require.Equal(t, tc.expected.PreviousRequest, recordedRequest.PreviousRequest)
 		})
 	}
@@ -189,142 +189,88 @@ func TestRecordedRequest_RedactHeaders(t *testing.T) {
 		name            string
 		request         RecordedRequest
 		headersToRedact []string
-		expectedHeaders http.Header
+		expectedHeaders map[string]string
 	}{
 		{
 			name: "Redact single header",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Accept":       []string{"application/xml"},
-					"Content-Type": []string{"application/json"},
+				Headers: map[string]string{
+					"Accept":       "application/xml",
+					"Content-Type": "application/json",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
 			headersToRedact: []string{"Content-Type"},
-			expectedHeaders: http.Header{
-				"Accept": []string{"application/xml"},
+			expectedHeaders: map[string]string{
+				"Accept": "application/xml",
 			},
 		},
 		{
 			name: "Redact multiple headers",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Accept":        []string{"application/xml"},
-					"Content-Type":  []string{"application/json"},
-					"Authorization": []string{"Bearer token"},
+				Headers: map[string]string{
+					"Accept":        "application/xml",
+					"Content-Type":  "application/json",
+					"Authorization": "Bearer token",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
 			headersToRedact: []string{"Content-Type", "Authorization"},
-			expectedHeaders: http.Header{
-				"Accept": []string{"application/xml"},
+			expectedHeaders: map[string]string{
+				"Accept": "application/xml",
 			},
 		},
 		{
 			name: "Redact non-existent header",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Accept": []string{"application/xml"},
+				Headers: map[string]string{
+					"Accept": "application/xml",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
 			headersToRedact: []string{"Non-Existent"},
-			expectedHeaders: http.Header{
-				"Accept": []string{"application/xml"},
+			expectedHeaders: map[string]string{
+				"Accept": "application/xml",
 			},
 		},
 		{
 			name: "Redact all headers",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Accept":       []string{"application/xml"},
-					"Content-Type": []string{"application/json"},
+				Headers: map[string]string{
+					"Accept":       "application/xml",
+					"Content-Type": "application/json",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
 			headersToRedact: []string{"Accept", "Content-Type"},
-			expectedHeaders: http.Header{},
+			expectedHeaders: map[string]string{},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.request.RedactHeaders(tc.headersToRedact)
-			require.Equal(t, tc.expectedHeaders, tc.request.Header, "RedactHeaders() result mismatch")
-		})
-	}
-}
-
-func TestRecordedRequest_Deserialize(t *testing.T) {
-	testCases := []struct {
-		name        string
-		input       string
-		expected    *RecordedRequest
-		expectedErr bool
-	}{
-		{
-			name:  "Valid serialized request",
-			input: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20\nServer Address: example.com\nPort: 8080\nProtocol: http\n********************************************************************************\nGET / HTTP/1.1\nAccept: application/xml\nContent-Type: application/json\n\n\n{\"key\": \"value\"}",
-			expected: &RecordedRequest{
-				Request:         "GET / HTTP/1.1",
-				Header:          http.Header{"Accept": []string{"application/xml"}, "Content-Type": []string{"application/json"}},
-				Body:            []byte("{\"key\": \"value\"}"),
-				PreviousRequest: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-				ServerAddress:   "example.com",
-				Port:            8080,
-				Protocol:        "http",
-			},
-			expectedErr: false,
-		},
-		{
-			name:        "Invalid serialized request - missing separator",
-			input:       "GET / HTTP/1.1\nAccept: application/xml",
-			expected:    nil,
-			expectedErr: true,
-		},
-		{
-			name:        "Empty input",
-			input:       "",
-			expected:    nil,
-			expectedErr: true,
-		},
-		{
-			name:        "Invalid serialized request - invalid port",
-			input:       "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20\nServer Address: example.com\nPort: invalid\nProtocol: http\n********************************************************************************\nGET / HTTP/1.1\nAccept: application/xml\nContent-Type: application/json\n\n\n{\"key\": \"value\"}",
-			expected:    nil,
-			expectedErr: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual, err := Deserialize(tc.input)
-			if tc.expectedErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, actual)
+			require.Equal(t, tc.expectedHeaders, tc.request.Headers, "RedactHeaders() result mismatch")
 		})
 	}
 }
@@ -340,10 +286,10 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 			name: "Request with test name header",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Test-Name": []string{"random test name"},
+				Headers: map[string]string{
+					"Test-Name": "random test name",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
@@ -356,26 +302,26 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 			name: "Request with empty test name header",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Test-Name": []string{""},
+				Headers: map[string]string{
+					"Test-Name": "",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected:    "f824dd099907ed4549822de827b075a7578baadebf08c5bc7303ead90a8f9ff7",
+			expected:    "28f9ed309209353577523abbe4224d54aacf62c8f7cb2368b66a35088d830f4d",
 			expectedErr: false,
 		},
 		{
 			name: "Request with invalid test name header",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Test-Name": []string{"../invalid_name"},
+				Headers: map[string]string{
+					"Test-Name": "../invalid_name",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
@@ -388,17 +334,17 @@ func TestRecordedRequest_GetRecordFileName(t *testing.T) {
 			name: "Request without test name header",
 			request: RecordedRequest{
 				Request: "GET / HTTP/1.1",
-				Header: http.Header{
-					"Accept":       []string{"application/xml"},
-					"Content-Type": []string{"application/json"},
+				Headers: map[string]string{
+					"Accept":       "application/xml",
+					"Content-Type": "application/json",
 				},
-				Body:            []byte{},
+				BodySegments:    []map[string]any{},
 				PreviousRequest: HeadSHA,
 				ServerAddress:   "",
 				Port:            0,
 				Protocol:        "",
 			},
-			expected:    "fc060aea9a2bf35da16ed18c6be577ca64d0f91d681d5db385082df61ecf4ccf",
+			expected:    "cf125193d9ada2cc07b684455524cc5d61e39269892178db1a8046273f3268d1",
 			expectedErr: false,
 		},
 	}

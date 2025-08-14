@@ -21,10 +21,11 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"sort"
 	"strings"
 
 	"github.com/google/test-server/internal/config"
@@ -32,14 +33,37 @@ import (
 
 const HeadSHA = "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d"
 
+// Represents a single interaction, request and response in a replay.
+type RecordInteraction struct {
+	Request  *RecordedRequest  `json:"request,omitempty"`
+	ShaSum   string            `json:"shaSum,omitempty"`
+	Response *RecordedResponse `json:"response,omitempty"`
+}
+
+// Represents a recorded session.
+type RecordFile struct {
+	RecordID     string               `json:"recordID,omitempty"`
+	Interactions []*RecordInteraction `json:"interactions,omitempty"`
+}
+
 type RecordedRequest struct {
-	Request         string
-	Header          http.Header
-	Body            []byte
-	PreviousRequest string // The sha256 sum of the previous request in the chain.
-	ServerAddress   string
-	Port            int64
-	Protocol        string
+	Method       string            `json:"method,omitempty"`
+	URL          string            `json:"url,omitempty"`
+	Request      string            `json:"request,omitempty"`
+	Headers      map[string]string `json:"headers,omitempty"`
+	BodySegments []map[string]any  `json:"bodySegments,omitempty"`
+	// The sha256 sum of the previous request in the chain.
+	PreviousRequest string `json:"previousRequest,omitempty"`
+	ServerAddress   string `json:"serverAddress,omitempty"`
+	Port            int64  `json:"port,omitempty"`
+	Protocol        string `json:"protocol,omitempty"`
+}
+
+type RecordedResponse struct {
+	StatusCode          int32             `json:"statusCode,omitempty"`
+	Headers             map[string]string `json:"headers,omitempty"`
+	BodySegments        []map[string]any  `json:"bodySegments,omitempty"`
+	SDKResponseSegments []map[string]any  `json:"sdkResponseSegments,omitempty"`
 }
 
 // NewRecordedRequest creates a RecordedRequest from an http.Request.
@@ -58,9 +82,11 @@ func NewRecordedRequest(req *http.Request, previousRequest string, cfg config.En
 
 	// Create the RecordedRequest.
 	recordedRequest := &RecordedRequest{
+		Method:          req.Method,
+		URL:             req.URL.String(),
 		Request:         request,
-		Header:          header,
-		Body:            body,
+		Headers:         GetHeadersMap(&header),
+		BodySegments:    []map[string]any{body},
 		PreviousRequest: previousRequest,
 		ServerAddress:   cfg.TargetHost,
 		Port:            cfg.TargetPort,
@@ -70,17 +96,23 @@ func NewRecordedRequest(req *http.Request, previousRequest string, cfg config.En
 	return recordedRequest, nil
 }
 
-func readBody(req *http.Request) ([]byte, error) {
+func readBody(req *http.Request) (map[string]any, error) {
 	if req.Body == nil {
-		return []byte{}, nil
+		return map[string]any{}, nil
 	}
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
+	var resultMap map[string]any
+	err = json.Unmarshal(body, &resultMap)
+	if err != nil {
+		log.Fatalf("Error unmarshaling JSON: %v", err)
+		return nil, err
+	}
 	// Restore the request body for further use.
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
-	return body, nil
+	return resultMap, nil
 }
 
 // ComputeSum computes the SHA256 sum of a RecordedRequest.
@@ -96,7 +128,7 @@ func (r *RecordedRequest) ComputeSum() string {
 // It returns error when test name contains illegal sequence.
 // If the TEST_NAME header is not present, it falls back to computed SHA256 sum.
 func (r *RecordedRequest) GetRecordingFileName() (string, error) {
-	testName := r.Header.Get("Test-Name")
+	testName := r.Headers["Test-Name"]
 	if strings.Contains(testName, "../") {
 		return "", fmt.Errorf("test name: %s contains illegal sequence '../'", testName)
 	}
@@ -108,125 +140,21 @@ func (r *RecordedRequest) GetRecordingFileName() (string, error) {
 }
 
 // Serialize the request.
-//
-// The serialization format is as follows:
-//   - The first line is the sha256 of the previous request as a hex string.
-//   - Next is the server address.
-//   - Next is the port.
-//   - Next is the protocol.
-//   - Next is a line of 80 asterisks.
-//   - Next is the HTTP request.
-//   - Next, a single line for each header formatted as "{key}: {value}".
-//   - Next, there are 2 empty lines.
-//   - The rest of the file is the body content.
 func (r *RecordedRequest) Serialize() string {
-	var builder strings.Builder
-
-	// Format the SHA256 sum of the previous request.
-	builder.WriteString(r.PreviousRequest)
-	builder.WriteString("\n")
-
-	builder.WriteString(fmt.Sprintf("Server Address: %s\n", r.ServerAddress))
-
-	builder.WriteString(fmt.Sprintf("Port: %d\n", r.Port))
-
-	builder.WriteString(fmt.Sprintf("Protocol: %s\n", r.Protocol))
-
-	builder.WriteString(strings.Repeat("*", 80) + "\n")
-
-	// Format the HTTP request line.
-	builder.WriteString(r.Request)
-	builder.WriteString("\n")
-
-	// Format the headers in sorted order.
-	keys := make([]string, 0, len(r.Header))
-	for key := range r.Header {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		for _, value := range r.Header[key] {
-			builder.WriteString(fmt.Sprintf("%s: %s\n", key, value))
-		}
+	req, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		fmt.Printf("unable to serialize recorded request: %s", err)
+		return ""
 	}
 
-	builder.WriteString("\n\n")
-	builder.WriteString(string(r.Body))
-
-	return builder.String()
-}
-
-// Deserialize the request.
-func Deserialize(data string) (*RecordedRequest, error) {
-	lines := strings.Split(data, "\n")
-	if len(lines) < 6 {
-		return nil, fmt.Errorf("invalid serialized data: not enough lines")
-	}
-
-	previousRequest := lines[0]
-
-	serverAddress := strings.TrimPrefix(lines[1], "Server Address: ")
-	portString := strings.TrimPrefix(lines[2], "Port: ")
-	protocol := strings.TrimPrefix(lines[3], "Protocol: ")
-
-	port := 0
-	if portString != "" {
-		_, err := fmt.Sscan(portString, &port)
-		if err != nil {
-			return nil, fmt.Errorf("invalid port: %w", err)
-		}
-	}
-
-	request := lines[5]
-
-	headerStart := 6
-	bodyStart := -1
-	headers := make(http.Header)
-
-	for i := headerStart; i < len(lines); i++ {
-		if lines[i] == "" && lines[i+1] == "" {
-			bodyStart = i + 2
-			break
-		}
-		parts := strings.SplitN(lines[i], ": ", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := parts[0]
-		value := parts[1]
-		headers.Add(key, value)
-	}
-
-	var body []byte
-	if bodyStart != -1 && bodyStart < len(lines) {
-		body = []byte(strings.Join(lines[bodyStart:], "\n"))
-	}
-
-	recordedRequest := &RecordedRequest{
-		Request:         request,
-		Header:          headers,
-		Body:            body,
-		PreviousRequest: previousRequest,
-		ServerAddress:   serverAddress,
-		Port:            int64(port),
-		Protocol:        protocol,
-	}
-
-	return recordedRequest, nil
+	return string(req)
 }
 
 // RedactHeaders removes the specified headers from the RecordedRequest.
 func (r *RecordedRequest) RedactHeaders(headers []string) {
 	for _, header := range headers {
-		r.Header.Del(header)
+		delete(r.Headers, header)
 	}
-}
-
-type RecordedResponse struct {
-	StatusCode int
-	Header     http.Header
-	Body       []byte
 }
 
 func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, error) {
@@ -247,69 +175,28 @@ func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, e
 
 	}
 
-	recordedResponse := &RecordedResponse{
-		StatusCode: resp.StatusCode,
-		Header:     resp.Header,
-		Body:       body,
-	}
-	return recordedResponse, nil
-}
-
-func (r *RecordedResponse) Serialize() string {
-	var buffer bytes.Buffer
-
-	buffer.WriteString(fmt.Sprintf("Status code: %d \n", r.StatusCode))
-	for name, values := range r.Header {
-		for _, value := range values {
-			buffer.WriteString(fmt.Sprintf("%s: %s\n", name, value))
-		}
-	}
-	buffer.WriteString("\n")
-	buffer.Write(r.Body)
-
-	return buffer.String()
-}
-
-// DeserializeResponse deserializes the response.
-func DeserializeResponse(data []byte) (*RecordedResponse, error) {
-	lines := bytes.SplitN(data, []byte("\n"), 2)
-	if len(lines) < 2 {
-		return nil, fmt.Errorf("invalid serialized data: not enough lines")
-	}
-
-	statusCodeLine := lines[0]
-	statusCode := 0
-
-	_, err := fmt.Sscanf(string(statusCodeLine), "Status code: %d", &statusCode)
+	var bodySegment map[string]any
+	err := json.Unmarshal(body, &bodySegment)
 	if err != nil {
-		return nil, fmt.Errorf("invalid status code: %w", err)
+		return nil, err
 	}
-
-	headerBodySplit := bytes.SplitN(lines[1], []byte("\n\n"), 2)
-	if len(headerBodySplit) < 2 {
-		return nil, fmt.Errorf("invalid serialized data: no body separator")
-	}
-
-	headerLines := bytes.Split(headerBodySplit[0], []byte("\n"))
-	headers := make(http.Header)
-
-	for _, line := range headerLines {
-		parts := bytes.SplitN(line, []byte(": "), 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := string(parts[0])
-		value := string(parts[1])
-		headers.Add(key, value)
-	}
-
-	body := headerBodySplit[1]
 
 	recordedResponse := &RecordedResponse{
-		StatusCode: statusCode,
-		Header:     headers,
-		Body:       body,
+		StatusCode:   int32(resp.StatusCode),
+		Headers:      GetHeadersMap(&resp.Header),
+		BodySegments: []map[string]any{bodySegment},
+	}
+	return recordedResponse, nil
+}
+
+func GetHeadersMap(header *http.Header) map[string]string {
+	// Create a new map[string]string
+	headerMap := make(map[string]string)
+
+	// Iterate over the http.Header and populate the new map
+	for key, values := range *header {
+		headerMap[key] = strings.Join(values, ", ")
 	}
 
-	return recordedResponse, nil
+	return headerMap
 }

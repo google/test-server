@@ -17,15 +17,16 @@ limitations under the License.
 package replay
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
-	"bufio"
-	"io"
 
 	"github.com/google/test-server/internal/config"
 	"github.com/google/test-server/internal/redact"
@@ -35,7 +36,7 @@ import (
 
 type ReplayHTTPServer struct {
 	prevRequestSHA string
-	seenFiles	   map[string]struct{}
+	seenFiles      map[string]struct{}
 	config         *config.EndpointConfig
 	recordingDir   string
 	redactor       *redact.Redact
@@ -44,7 +45,7 @@ type ReplayHTTPServer struct {
 func NewReplayHTTPServer(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *ReplayHTTPServer {
 	return &ReplayHTTPServer{
 		prevRequestSHA: store.HeadSHA,
-		seenFiles: 		make(map[string]struct{}),
+		seenFiles:      make(map[string]struct{}),
 		config:         cfg,
 		recordingDir:   recordingDir,
 		redactor:       redactor,
@@ -84,7 +85,7 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 	}
 	if _, ok := r.seenFiles[fileName]; !ok {
 		// Reset to HeadSHA when first time seen request from the given file.
-		redactedReq.PreviousRequest=store.HeadSHA
+		redactedReq.PreviousRequest = store.HeadSHA
 	}
 	if req.Header.Get("Upgrade") == "websocket" {
 		fmt.Printf("Upgrading connection to websocket...\n")
@@ -113,7 +114,7 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		fmt.Printf("Error writing response: %v\n", err)
 		panic(err)
 	}
-	if (fileName != shaSum) {
+	if fileName != shaSum {
 		r.prevRequestSHA = shaSum
 	}
 	r.seenFiles[fileName] = struct{}{}
@@ -128,16 +129,19 @@ func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.Reco
 	// Redact headers by key
 	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
 	// Redacts secrets from header values
-	r.redactor.Headers(recordedRequest.Header)
+	r.redactor.Headers(recordedRequest.Headers)
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
-	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
-
+	var redactedBodySegments []map[string]any
+	for _, bodySegment := range recordedRequest.BodySegments {
+		redactedBodySegments = append(redactedBodySegments, r.redactor.Map(bodySegment))
+	}
+	recordedRequest.BodySegments = redactedBodySegments
 	return recordedRequest, nil
 }
 
 func (r *ReplayHTTPServer) loadResponse(fileName string, shaSum string) (*store.RecordedResponse, error) {
-	// 1. Open the replay log file for reading.
-	filePath := filepath.Join(r.recordingDir, fileName+".http.log")
+	// Open the replay log file for reading.
+	filePath := filepath.Join(r.recordingDir, fileName+".json")
 	fmt.Printf("loading response from : %s with shaSum: %s\n", filePath, shaSum)
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -146,63 +150,44 @@ func (r *ReplayHTTPServer) loadResponse(fileName string, shaSum string) (*store.
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
-	expectedKey := shaSum + ".resp"
-	// 2. Scan the file line by line using the reader directly.
-	for {
-		// Read one line, including the newline character.
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				return nil, fmt.Errorf("response with shaSum %s not found in file", shaSum)
-			}
-			return nil, fmt.Errorf("error while reading file: %w", err)
-		}
-		trimmedLine := strings.TrimSpace(line)
-		parts := strings.Fields(trimmedLine)
-		if len(parts) != 2 {
-			continue
-		}
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	var recordFile store.RecordFile
+	err = json.Unmarshal(body, &recordFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to deserialize data to RecordFile: %w", err)
+	}
 
-		fileKey := parts[0]
-		sizeStr := parts[1]
-
-		size, err := strconv.Atoi(sizeStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid size format on delimiter line: '%s'", trimmedLine)
+	for _, interaction := range recordFile.Interactions {
+		if interaction.Request.PreviousRequest == shaSum {
+			return interaction.Response, nil
 		}
-		fmt.Printf("Bytes to load: %d\n", size)
-		if size < 0 {
-			return nil, fmt.Errorf("invalid negative size on delimiter line: '%s'", trimmedLine)
-		}
-
-		// 3. Read the exact number of bytes for the payload.
-		data := make([]byte, size)
-		if _, err := io.ReadFull(reader, data); err != nil {
-			return nil, fmt.Errorf("failed to read %d bytes after delimiter: %w", size, err)
-		}
-
-		// 4. Return the response when it matches our target shaSum.
-		if fileKey == expectedKey {
-			return store.DeserializeResponse(data)
-		} else {
-			continue
+		if interaction.ShaSum == shaSum {
+			return interaction.Response, nil
 		}
 	}
+
+	return nil, fmt.Errorf("response with shaSum %s not found in file", shaSum)
 }
 
 func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.RecordedResponse) error {
-	for key, values := range resp.Header {
-		for _, value := range values {
-			if key == "Content-Length" || key == "Content-Encoding" {
-				continue
-			}
-			w.Header().Add(key, value)
+	for key, value := range resp.Headers {
+		if key == "Content-Length" || key == "Content-Encoding" {
+			continue
 		}
+		w.Header().Add(key, value)
 	}
 
-	w.WriteHeader(resp.StatusCode)
+	w.WriteHeader(int(resp.StatusCode))
 
-	_, err := w.Write(resp.Body)
+	jsonBytes, err := json.Marshal(resp.BodySegments[0])
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(jsonBytes)
 	return err
 }
 

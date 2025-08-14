@@ -17,7 +17,6 @@ limitations under the License.
 package redact
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -129,52 +128,52 @@ func TestRedact_Bytes(t *testing.T) {
 func TestRedact_Headers(t *testing.T) {
 	testCases := []struct {
 		name            string
-		headers         http.Header
+		headers         map[string]string
 		secrets         []string
-		expectedHeaders http.Header
+		expectedHeaders map[string]string
 	}{
 		{
 			name: "Redact secret in single header value",
-			headers: http.Header{
-				"Authorization": []string{"Bearer secret_token_123"},
-				"Content-Type":  []string{"application/json"},
+			headers: map[string]string{
+				"Authorization": "Bearer secret_token_123",
+				"Content-Type":  "application/json",
 			},
 			secrets: []string{"secret_token_123"},
-			expectedHeaders: http.Header{
-				"Authorization": []string{"Bearer REDACTED"},
-				"Content-Type":  []string{"application/json"},
+			expectedHeaders: map[string]string{
+				"Authorization": "Bearer REDACTED",
+				"Content-Type":  "application/json",
 			},
 		},
 		{
 			name: "Redact secret in multiple header values",
-			headers: http.Header{
-				"Set-Cookie": []string{"sessionid=secret_session_id_789", "other=value"},
-				"X-Api-Key":  []string{"key_value_xyz"},
+			headers: map[string]string{
+				"Set-Cookie": "sessionid=secret_session_id_789 other=value",
+				"X-Api-Key":  "key_value_xyz",
 			},
 			secrets: []string{"secret_session_id_789", "key_value_xyz"},
-			expectedHeaders: http.Header{
-				"Set-Cookie": []string{"sessionid=REDACTED", "other=value"},
-				"X-Api-Key":  []string{"REDACTED"},
+			expectedHeaders: map[string]string{
+				"Set-Cookie": "sessionid=REDACTED other=value",
+				"X-Api-Key":  "REDACTED",
 			},
 		},
 		{
 			name: "No secrets to redact",
-			headers: http.Header{
-				"Authorization": []string{"Bearer token"},
+			headers: map[string]string{
+				"Authorization": "Bearer token",
 			},
 			secrets: []string{},
-			expectedHeaders: http.Header{
-				"Authorization": []string{"Bearer token"},
+			expectedHeaders: map[string]string{
+				"Authorization": "Bearer token",
 			},
 		},
 		{
 			name: "Empty secret in list",
-			headers: http.Header{
-				"Authorization": []string{"Bearer secret_token_123"},
+			headers: map[string]string{
+				"Authorization": "Bearer secret_token_123",
 			},
 			secrets: []string{"", "secret_token_123"},
-			expectedHeaders: http.Header{
-				"Authorization": []string{"Bearer REDACTED"},
+			expectedHeaders: map[string]string{
+				"Authorization": "Bearer REDACTED",
 			},
 		},
 	}
@@ -184,12 +183,85 @@ func TestRedact_Headers(t *testing.T) {
 			redactor, err := NewRedact(tc.secrets)
 			require.NoError(t, err)
 			// Create a copy of the headers to avoid modifying the original test case data
-			headersCopy := make(http.Header)
+			headersCopy := make(map[string]string)
 			for k, v := range tc.headers {
-				headersCopy[k] = append([]string{}, v...)
+				headersCopy[k] = v
 			}
 			redactor.Headers(headersCopy)
 			require.Equal(t, tc.expectedHeaders, headersCopy)
+		})
+	}
+}
+
+func TestRedact_Map(t *testing.T) {
+	testCases := []struct {
+		name           string
+		input          map[string]any
+		secrets        []string
+		expectedOutput map[string]any
+	}{
+		{
+			name: "Redact single secret",
+			input: map[string]any{
+				"key": "This is a secret: abc",
+			},
+			secrets: []string{"abc"},
+			expectedOutput: map[string]any{
+				"key": "This is a secret: REDACTED",
+			},
+		},
+		{
+			name: "Redact multiple secrets",
+			input: map[string]any{
+				"Secret1": "123",
+				"Secret2": "xyz",
+			},
+			secrets: []string{"123", "xyz"},
+			expectedOutput: map[string]any{
+				"Secret1": "REDACTED",
+				"Secret2": "REDACTED",
+			},
+		},
+		{
+			name: "No secrets to redact",
+			input: map[string]any{
+				"key": "No secrets here",
+			},
+			secrets: []string{},
+			expectedOutput: map[string]any{
+				"key": "No secrets here",
+			},
+		},
+		{
+			name:           "Empty input map",
+			input:          map[string]any{},
+			secrets:        []string{"abc"},
+			expectedOutput: map[string]any{},
+		},
+		{
+			name: "Empty secret in list",
+			input: map[string]any{
+				"key": "This is a secret: abc",
+			},
+			secrets: []string{"", "abc"},
+			expectedOutput: map[string]any{
+				"key": "This is a secret: REDACTED",
+			},
+		},
+		{
+			name:           "Nil input map",
+			input:          nil,
+			secrets:        []string{"abc"},
+			expectedOutput: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			redactor, err := NewRedact(tc.secrets)
+			require.NoError(t, err)
+			actualOutput := redactor.Map(tc.input)
+			require.Equal(t, tc.expectedOutput, actualOutput)
 		})
 	}
 }

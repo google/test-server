@@ -18,6 +18,7 @@ package record
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,7 +34,7 @@ import (
 
 type RecordingHTTPSProxy struct {
 	prevRequestSHA string
-	seenFiles	   map[string]struct{}
+	seenFiles      map[string]store.RecordFile
 	config         *config.EndpointConfig
 	recordingDir   string
 	redactor       *redact.Redact
@@ -42,7 +43,7 @@ type RecordingHTTPSProxy struct {
 func NewRecordingHTTPSProxy(cfg *config.EndpointConfig, recordingDir string, redactor *redact.Redact) *RecordingHTTPSProxy {
 	return &RecordingHTTPSProxy{
 		prevRequestSHA: store.HeadSHA,
-		seenFiles: 		make(map[string]struct{}),
+		seenFiles:      make(map[string]store.RecordFile),
 		config:         cfg,
 		recordingDir:   recordingDir,
 		redactor:       redactor,
@@ -86,7 +87,7 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 	}
 	if _, ok := r.seenFiles[fileName]; !ok {
 		// Reset to HeadSHA when first time seen a request from the given file.
-		recReq.PreviousRequest=store.HeadSHA
+		recReq.PreviousRequest = store.HeadSHA
 	}
 
 	if req.Header.Get("Upgrade") == "websocket" {
@@ -108,10 +109,9 @@ func (r *RecordingHTTPSProxy) handleRequest(w http.ResponseWriter, req *http.Req
 		http.Error(w, fmt.Sprintf("Error recording response: %v", err), http.StatusInternalServerError)
 		return
 	}
-	if (fileName != shaSum) {
+	if fileName != shaSum {
 		r.prevRequestSHA = shaSum
 	}
-	r.seenFiles[fileName] = struct{}{}
 }
 
 func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedRequest, error) {
@@ -123,9 +123,13 @@ func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedR
 	// Redact headers by key
 	recordedRequest.RedactHeaders(r.config.RedactRequestHeaders)
 	// Redacts secrets from header values
-	r.redactor.Headers(recordedRequest.Header)
+	r.redactor.Headers(recordedRequest.Headers)
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
-	recordedRequest.Body = r.redactor.Bytes(recordedRequest.Body)
+	var redactedBodySegments []map[string]any
+	for _, bodySegment := range recordedRequest.BodySegments {
+		redactedBodySegments = append(redactedBodySegments, r.redactor.Map(bodySegment))
+	}
+	recordedRequest.BodySegments = redactedBodySegments
 	return recordedRequest, nil
 }
 
@@ -181,42 +185,40 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	if err != nil {
 		return err
 	}
-	recordPath := filepath.Join(r.recordingDir, fileName+".http.log")
 
-	// Default to overwriting the file, assuming it's a new file to record.
-	fileMode := os.O_TRUNC
-	// If we've seen requests with the same file name before, change the mode to append.
-	if _, ok := r.seenFiles[fileName]; ok {
-		fileMode = os.O_APPEND
+	recordFile, ok := r.seenFiles[fileName]
+	if !ok {
+		r.seenFiles[fileName] = store.RecordFile{RecordID: fileName}
+		recordFile = r.seenFiles[fileName]
 	}
-	file, err := os.OpenFile(recordPath, fileMode|os.O_CREATE|os.O_WRONLY , 0644)
+
+	var recordInteraction store.RecordInteraction
+	recordInteraction.Request = recReq
+	recordInteraction.ShaSum = shaSum
+	recordInteraction.Response = recordedResponse
+
+	recordFile.Interactions = append(recordFile.Interactions, &recordInteraction)
+
+	recordPath := filepath.Join(r.recordingDir, fileName+".json")
+
+	// Default to overwriting the file.
+	fileMode := os.O_TRUNC
+	file, err := os.OpenFile(recordPath, fileMode|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	fmt.Printf("Writing request to: %s\n", recordPath)
-	serializedReq := recReq.Serialize()
-	_, err = file.WriteString(fmt.Sprintf("%s.req %d\n", shaSum, len(serializedReq)))
-	if err != nil {
-		return err
-	}
-	_, err = file.WriteString(serializedReq)
+	interaction, err := json.MarshalIndent(recordFile, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Writing response to: %s\n", recordPath)
-    recordedResponse.Body = r.redactor.Bytes(recordedResponse.Body)
-	serializedResp := recordedResponse.Serialize()
-	_, err = file.WriteString(fmt.Sprintf("\n%s.resp %d\n", shaSum, len(serializedResp)))
+	_, err = file.WriteString(string(interaction))
 	if err != nil {
 		return err
 	}
-	_, err = file.WriteString(serializedResp)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
