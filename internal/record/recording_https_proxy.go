@@ -188,7 +188,7 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 
 	recordFile, ok := r.seenFiles[fileName]
 	if !ok {
-		r.seenFiles[fileName] = store.RecordFile{RecordID: fileName}
+		r.seenFiles[fileName] = store.RecordFile{RecordID: fileName, Interactions: []*store.RecordInteraction{}}
 		recordFile = r.seenFiles[fileName]
 	}
 
@@ -198,6 +198,7 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	recordInteraction.Response = recordedResponse
 
 	recordFile.Interactions = append(recordFile.Interactions, &recordInteraction)
+	r.seenFiles[fileName] = recordFile
 
 	recordPath := filepath.Join(r.recordingDir, fileName+".json")
 
