@@ -131,6 +131,7 @@ func (r *ReplayHTTPServer) createRedactedRequest(req *http.Request) (*store.Reco
 	// Redacts secrets from header values
 	r.redactor.Headers(recordedRequest.Headers)
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
+	recordedRequest.URL = r.redactor.String(recordedRequest.URL)
 	var redactedBodySegments []map[string]any
 	for _, bodySegment := range recordedRequest.BodySegments {
 		redactedBodySegments = append(redactedBodySegments, r.redactor.Map(bodySegment))
@@ -179,13 +180,34 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 
 	w.WriteHeader(int(resp.StatusCode))
 
-	jsonBytes, err := json.Marshal(resp.BodySegments[0])
-	if err != nil {
+	if len(resp.BodySegments) == 1 {
+		jsonBytes, err := json.Marshal(resp.BodySegments[0])
+		if err != nil {
+			return err
+		}
+
+		_, err = w.Write(jsonBytes)
 		return err
+	} else {
+		respToWrite := []byte{}
+		for _, bodySegment := range resp.BodySegments {
+			jsonBytes, err := json.Marshal(bodySegment)
+			if err != nil {
+				return err
+			}
+
+			line := append([]byte("data: "), jsonBytes...)
+			line = append(line, []byte("\n\n")...)
+
+			respToWrite = append(respToWrite, line...)
+		}
+
+		if _, err := w.Write(respToWrite); err != nil {
+			return err
+		}
 	}
 
-	_, err = w.Write(jsonBytes)
-	return err
+	return nil
 }
 
 func extractNumber(i *int, content string) (int, error) {
