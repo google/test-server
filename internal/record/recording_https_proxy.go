@@ -125,6 +125,7 @@ func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedR
 	// Redacts secrets from header values
 	r.redactor.Headers(recordedRequest.Headers)
 	recordedRequest.Request = r.redactor.String(recordedRequest.Request)
+	recordedRequest.URL = r.redactor.String(recordedRequest.URL)
 	var redactedBodySegments []map[string]any
 	for _, bodySegment := range recordedRequest.BodySegments {
 		redactedBodySegments = append(redactedBodySegments, r.redactor.Map(bodySegment))

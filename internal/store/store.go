@@ -17,6 +17,7 @@ limitations under the License.
 package store
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
@@ -175,16 +176,45 @@ func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, e
 
 	}
 
+	var bodySegments []map[string]any
 	var bodySegment map[string]any
 	err := json.Unmarshal(body, &bodySegment)
 	if err != nil {
-		return nil, err
+		// Attempt to process streamed response.
+		prefix := []byte("data: ")
+
+		reader := bytes.NewReader(body)
+		scanner := bufio.NewScanner(reader)
+
+		for scanner.Scan() {
+			lineBytes := scanner.Bytes()
+			if len(lineBytes) == 0 {
+				continue
+			}
+
+			if jsonBytes, ok := bytes.CutPrefix(lineBytes, prefix); ok {
+				var jsonMap map[string]any
+				if err := json.Unmarshal(jsonBytes, &jsonMap); err != nil {
+					log.Printf("Error unmarshaling JSON: %v", err)
+					continue
+				}
+
+				bodySegments = append(bodySegments, jsonMap)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("Error reading input bytes: %v", err)
+			return nil, err
+		}
+	} else {
+		bodySegments = append(bodySegments, bodySegment)
 	}
 
 	recordedResponse := &RecordedResponse{
 		StatusCode:   int32(resp.StatusCode),
 		Headers:      GetHeadersMap(&resp.Header),
-		BodySegments: []map[string]any{bodySegment},
+		BodySegments: bodySegments,
 	}
 	return recordedResponse, nil
 }
