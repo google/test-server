@@ -40,7 +40,7 @@ namespace TestServerSdk
     /// Ensures the test-server binary for the given version is present under <repo>/sdks/dotnet/bin.
     /// It will download the release asset from GitHub, verify SHA256 using the checksums.json found in the repo, extract it and set executable bits.
     /// </summary>
-    public static async Task EnsureBinaryAsync(string outDir, string version = "v0.2.5")
+    public static async Task EnsureBinaryAsync(string outDir, string version = "v0.2.6")
     {
       var embeddedCandidate = Path.Combine(AppContext.BaseDirectory, "checksums.json");
       var repoChecksumsPath = File.Exists(embeddedCandidate)
@@ -103,17 +103,17 @@ namespace TestServerSdk
 
     private static string RepoRootPathFrom(string checksumsPath)
     {
-      // checksumsPath is expected to be <repo>/sdks/typescript/checksums.json
+      // checksumsPath is expected to be <repo>/sdks/dotnet/checksums.json
       return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(checksumsPath) ?? string.Empty, "..", ".."));
     }
 
     private static string? FindChecksumsJson()
     {
-      // Start from AppContext.BaseDirectory and walk up to find sdks/typescript/checksums.json
+      // Start from AppContext.BaseDirectory and walk up to find sdks/dotnet/checksums.json
       var dir = new DirectoryInfo(AppContext.BaseDirectory);
       for (int i = 0; i < 8 && dir != null; i++)
       {
-        var candidate = Path.Combine(dir.FullName, "sdks", "typescript", "checksums.json");
+        var candidate = Path.Combine(dir.FullName, "sdks", "dotnet", "checksums.json");
         if (File.Exists(candidate)) return candidate;
         dir = dir.Parent;
       }
@@ -121,7 +121,7 @@ namespace TestServerSdk
       dir = new DirectoryInfo(Directory.GetCurrentDirectory());
       for (int i = 0; i < 4 && dir != null; i++)
       {
-        var candidate = Path.Combine(dir.FullName, "sdks", "typescript", "checksums.json");
+        var candidate = Path.Combine(dir.FullName, "sdks", "dotnet", "checksums.json");
         if (File.Exists(candidate)) return candidate;
         dir = dir.Parent;
       }
@@ -176,14 +176,12 @@ namespace TestServerSdk
       }
       else
       {
-        // Extract .tar.gz using SharpCompress ReaderFactory on the file stream
         using var fileStream = File.OpenRead(archivePath);
         using var reader = ReaderFactory.Open(fileStream);
         while (reader.MoveToNextEntry())
         {
           var entry = reader.Entry;
           if (entry.IsDirectory) continue;
-          // Ensure the destination directory exists
           var outPath = Path.Combine(destDir, entry.Key);
           var outDir = Path.GetDirectoryName(outPath);
           if (!string.IsNullOrEmpty(outDir)) Directory.CreateDirectory(outDir);

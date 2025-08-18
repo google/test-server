@@ -24,7 +24,7 @@ namespace TestServerSdk.InstallerTool
     {
         static async Task<int> Main(string[] args)
         {
-            var version = args.Length > 0 ? args[0] : "v0.2.5";
+            var version = args.Length > 0 ? args[0] : "v0.2.6";
             try
             {
                 await BinaryInstaller.EnsureBinaryAsync(version);

@@ -27,14 +27,11 @@ namespace TestServerSdk
 {
   public class TestServerOptions
   {
-    // Required: callers must provide these
     public required string ConfigPath { get; set; }
     public required string RecordingDir { get; set; }
     public required string Mode { get; set; } // "record" or "replay"
-                                              // Required explicit binary location (caller must provide)
     public required string BinaryPath { get; set; }
 
-    // Optional callbacks: allow null when the caller doesn't provide handlers
     public Action<string>? OnStdOut { get; set; }
     public Action<string>? OnStdErr { get; set; }
     public Action<int?, string>? OnExit { get; set; }
@@ -65,8 +62,7 @@ namespace TestServerSdk
       {
         var targetDir = Path.GetDirectoryName(p) ?? Path.GetFullPath(Directory.GetCurrentDirectory());
         Console.WriteLine($"[TestServerSdk] test-server not found at {p}. Installing into {targetDir}...");
-        // Call installer to ensure binary exists (block until done)
-        BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.5").GetAwaiter().GetResult();
+        BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.6").GetAwaiter().GetResult();
         if (File.Exists(p)) return p;
         throw new FileNotFoundException($"After installation, test-server binary still not found at: {p}");
       }
@@ -117,7 +113,6 @@ namespace TestServerSdk
 
     private async Task AwaitHealthyTestServer()
     {
-      // Parse YAML config and check health endpoints
       var yaml = File.ReadAllText(_options.ConfigPath);
       var input = new StringReader(yaml);
       var yamlStream = new YamlStream();
