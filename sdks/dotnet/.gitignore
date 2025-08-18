@@ -1,0 +1,15 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# NuGet packages
+*.nupkg
+
+# IDE / OS
+**/.vs/
+**/.vscode/
+**/.DS_Store
+
+*.swp
+test-server
+/recordings

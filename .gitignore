@@ -1,3 +1,21 @@
+# Ignore build outputs
+**/bin/
+**/obj/
+*.nupkg
+
+# macOS
+.DS_Store
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.suo
+
+# VS Code
+.vscode/
+
+# Solution files that should not be committed from local experimentation
+test-server.sln
 *.swp
 test-server
 /recordings
