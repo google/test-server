@@ -200,11 +200,7 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 
 			if _, err := w.Write(line); err != nil {
 				return err
-      }
-		}
-
-		if _, err := w.Write(respToWrite); err != nil {
-			return err
+			}
 		}
 	}
 
