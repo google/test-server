@@ -52,9 +52,13 @@ go install github.com/goreleaser/goreleaser/v2@latest
     ```
 3.  Run GoReleaser:
     ```sh
-    goreleaser release
+    ~/go/bin/goreleaser release
     ```
-4.  Verify that a new release with the updated binaries is available on the project's GitHub Releases page.
+
+    Note: This may fail with `error=missing GITHUB_TOKEN, GITLAB_TOKEN and GITEA_TOKEN`. To create a token, follow
+    https://github.com/settings/tokens and set an environment variable `export GITHUB_TOKEN=<token>` before
+    retrying the command.
+5.  Verify that a new release with the updated binaries is available on the project's GitHub Releases page.
 
 ### Updating the Go release binary pin in the SDKs
 
@@ -65,7 +69,8 @@ After a new `test-server` binary is released, you need to update the checksums p
     go run scripts/update-sdk-checksums/main.go v0.2.2
     ```
     This updates the pinned checksums (currently only in the TypeScript SDK).
-2.  Commit and push the changes. These changes will be included in the next SDK release.
+2.  Commit and push the changes. These changes will be included in the next SDK release. Example PR:
+    https://github.com/google/test-server/pull/22
 
 ### Publishing the TypeScript SDK to npm
 
@@ -78,8 +83,11 @@ After a new `test-server` binary is released, you need to update the checksums p
     cd sdks/typescript
     ```
 3.  Update the `version` in `package.json` (e.g., using `npm version patch`).
-4.  Install dependencies and build the SDK:
+4.  Commit and push the changes. Example PR: https://github.com/google/test-server/pull/23
+5.  Install dependencies and build the SDK:
     ```sh
     npm ci && npm run build
     ```
-5.  Publish the new version to npm following internal guidance at go/wombat-dressing-room.
+6.  Publish the new version to npm following internal guidance at go/wombat-dressing-room. (When prompted,
+    create a package specific publish token for  `test-server-sdk`.)
+  
