@@ -109,7 +109,7 @@ func (r *ReplayHTTPServer) handleRequest(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = r.writeResponse(w, resp)
+	err = r.writeResponse(w, resp, redactedReq)
 	if err != nil {
 		fmt.Printf("Error writing response: %v\n", err)
 		panic(err)
@@ -170,7 +170,7 @@ func (r *ReplayHTTPServer) loadResponse(fileName string, shaSum string) (*store.
 	return nil, fmt.Errorf("response with shaSum %s not found in file", shaSum)
 }
 
-func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.RecordedResponse) error {
+func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.RecordedResponse, req *store.RecordedRequest) error {
 	for key, value := range resp.Headers {
 		if key == "Content-Length" || key == "Content-Encoding" {
 			continue
@@ -180,7 +180,7 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 
 	w.WriteHeader(int(resp.StatusCode))
 
-	if len(resp.BodySegments) == 1 {
+	if !strings.Contains(req.URL, "alt=sse") {
 		jsonBytes, err := json.Marshal(resp.BodySegments[0])
 		if err != nil {
 			return err
@@ -189,7 +189,6 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 		_, err = w.Write(jsonBytes)
 		return err
 	} else {
-		respToWrite := []byte{}
 		for _, bodySegment := range resp.BodySegments {
 			jsonBytes, err := json.Marshal(bodySegment)
 			if err != nil {
@@ -199,11 +198,9 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 			line := append([]byte("data: "), jsonBytes...)
 			line = append(line, []byte("\n\n")...)
 
-			respToWrite = append(respToWrite, line...)
-		}
-
-		if _, err := w.Write(respToWrite); err != nil {
-			return err
+			if _, err := w.Write(line); err != nil {
+				return err
+			}
 		}
 	}
 

@@ -106,6 +106,9 @@ func readBody(req *http.Request) (map[string]any, error) {
 		return nil, err
 	}
 	var resultMap map[string]any
+	if string(body) == "" {
+		return resultMap, nil
+	}
 	err = json.Unmarshal(body, &resultMap)
 	if err != nil {
 		log.Fatalf("Error unmarshaling JSON: %v", err)
