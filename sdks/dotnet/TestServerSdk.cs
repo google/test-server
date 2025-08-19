@@ -64,11 +64,11 @@ namespace TestServerSdk
         Console.WriteLine($"[TestServerSdk] test-server not found at {p}. Installing into {targetDir}...");
         BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.6").GetAwaiter().GetResult();
         if (File.Exists(p)) return p;
-        throw new FileNotFoundException($"After installation, test-server binary still not found at: {p}");
+        throw new FileNotFoundException($"[TestServerSdk] After installation, test-server binary still not found at: {p}");
       }
       catch (Exception ex)
       {
-        throw new FileNotFoundException($"TestServerOptions.BinaryPath was set but file not found and installer failed: {p}", ex);
+        throw new FileNotFoundException($"[TestServerSdk] TestServerOptions.BinaryPath was set but file not found and installer failed: {p}", ex);
       }
     }
 

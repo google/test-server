@@ -18,23 +18,15 @@ using System;
 using System.Threading.Tasks;
 using TestServerSdk;
 
-namespace TestServerSdk.InstallerTool
+// This program is just a thin wrapper around the installer logic in the SDK.
+if (args.Length == 0)
 {
-    class Program
-    {
-        static async Task<int> Main(string[] args)
-        {
-            var version = args.Length > 0 ? args[0] : "v0.2.6";
-            try
-            {
-                await BinaryInstaller.EnsureBinaryAsync(version);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Installer failed: {ex.Message}");
-                return 2;
-            }
-        }
-    }
+    Console.WriteLine("Usage: installer <output_directory> [version]");
+    return 1;
 }
+
+string outDir = args[0];
+string version = args.Length > 1 ? args[1] : "v0.2.6";
+
+await BinaryInstaller.EnsureBinaryAsync(outDir, version);
+return 0;

@@ -4,8 +4,16 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageVersion>0.1.0</PackageVersion>
+    
+    <PackageVersion>0.1.1</PackageVersion>
+    <Authors>Google LLC</Authors>
+    <Description>A .NET SDK to manage the test-server process for integration testing.</Description>
+    <PackageProjectUrl>https://github.com/google/test-server</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/google/test-server.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <OutputType>Library</OutputType>
@@ -15,8 +23,14 @@
     <PackageReference Include="SharpCompress" Version="0.29.0" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="checksums.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <!-- ADD this to embed the file directly into the DLL -->
+    <EmbeddedResource Include="checksums.json" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="LICENSE" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="tools/**" />
+    <EmbeddedResource Remove="tools/**" />
+    <None Remove="tools/**" />
   </ItemGroup>
 </Project>
