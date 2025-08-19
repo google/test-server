@@ -33,6 +33,7 @@ import (
 )
 
 const HeadSHA = "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d"
+const ReadBufferSize = 10 * 1024 * 1024 // 10MB
 
 // Represents a single interaction, request and response in a replay.
 type RecordInteraction struct {
@@ -188,6 +189,9 @@ func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, e
 
 		reader := bytes.NewReader(body)
 		scanner := bufio.NewScanner(reader)
+
+		buf := make([]byte, ReadBufferSize)
+		scanner.Buffer(buf, ReadBufferSize)
 
 		for scanner.Scan() {
 			lineBytes := scanner.Bytes()
