@@ -33,3 +33,8 @@ sdks/typescript/sample/dist/
 
 # Python SDK specific
 sdks/python/bin/
+sdks/python/src/__pycache__
+
+# Python SDK Sample specific
+sdks/python/sample/__pycache__
+sdks/python/sample/.pytest_cache
