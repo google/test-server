@@ -169,9 +169,8 @@ function ensureBinaryIsExecutable(binaryPath, platform) {
 async function main() {
     const binaryPath = getBinaryPath();
     if (fs.existsSync(binaryPath)) {
-        console.log(`${PROJECT_NAME} binary already exists at ${binaryPath}. Skipping download.`);
-        ensureBinaryIsExecutable(binaryPath, os.platform());
-        return;
+        console.log(`${PROJECT_NAME} binary already exists at ${binaryPath}. Removing it for a fresh install.`);
+        fs.unlinkSync(binaryPath); // This deletes the file
     }
 
     if (!fs.existsSync(BIN_DIR)) {
