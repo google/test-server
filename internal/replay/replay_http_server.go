@@ -178,6 +178,11 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 		w.Header().Add(key, value)
 	}
 
+	// When the response body is empty we return directly with the headers.
+	if len(resp.BodySegments) == 0 {
+		return nil
+	}
+
 	w.WriteHeader(int(resp.StatusCode))
 
 	if !strings.Contains(req.URL, "alt=sse") {
