@@ -5,7 +5,7 @@ This guide outlines the standard procedure for compiling and testing local modif
 
 The recommended workflow for end-to-end validation is to test through the SDK sample. This ensures that any changes to the core Go binary are compatible with the SDK integration layer.
 
-##Step-by-Step Testing Workflow using Typescript SDK
+## Step-by-Step e2e Testing Workflow with TypeScript SDK
 
 The process involves compiling your local Go source code, preparing the TypeScript environment, and then linking your new binary to the sample project for testing.
 
@@ -13,7 +13,7 @@ Step 1: Compile the Go Binary
 
 First, compile your local changes into an executable test-server binary.
 
-Navigate to the project's root directory (`test-server$`) and build the Go application.
+Navigate to the project's root directory (`test-server`) and build the Go application.
 
 ```sh
 go build
@@ -23,9 +23,9 @@ After a successful build, a new executable named `test-server` will be present i
 
 Step 2: Build the TypeScript SDK Wrapper
 
-The TypeScript SDK acts as a wrapper around the Go binary. It must be built before we can use it in the typescript samples.
+The TypeScript SDK acts as a wrapper around the Go binary. It must be built before we can use it in the TypeScript samples.
 
-Navigate to the TypeScript SDK directory: test-server/sdks/typescript$.
+Navigate to the TypeScript SDK directory: `test-server/sdks/typescript`.
 
 Install dependencies and build the SDK package.
 
@@ -38,7 +38,7 @@ Step 3: Prepare the Sample Test Project
 
 The sample project consumes the TypeScript SDK. We will set it up to run our tests.
 
-Navigate to the sample project directory: `test-server/sdks/typescript/samples$`.
+Navigate to the sample project directory: `test-server/sdks/typescript/samples`.
 
 Install its dependencies. This command installs the test-server-sdk we just built in step 2.
 
@@ -49,7 +49,7 @@ npm install
 Step 4: Link Your Local test-server Binary
 This is the most critical step. You must replace the pre-packaged binary in the sample project's dependencies with the custom binary you built in Step 1.
 
-After the previous steps, the directory structure looks like this. The goal is to replace the test-server binary highlighted below, the graph below is a tree view of your directory structure from `test-server/sdks/typescript/samples$`.
+After the previous steps, the directory structure looks like this. The goal is to replace the test-server binary highlighted below, the graph below is a tree view of your directory structure from `test-server/sdks/typescript/samples`.
 
 ```diff
 ├── dist
@@ -83,7 +83,7 @@ After the previous steps, the directory structure looks like this. The goal is t
 
 ```
 
-From the test-server/sdks/typescript/samples$ directory, run the following command to move your freshly compiled binary into place, overwriting the old one.
+From the `test-server/sdks/typescript/samples` directory, run the following command to move your freshly compiled binary into place, overwriting the old one.
 
 ```sh
 
@@ -95,7 +95,7 @@ Step 5: Run the Integration Tests
 
 You are now ready to run the sample project's test suite against your local test-server build.
 
-From the `test-server/sdks/typescript/samples$` directory:
+From the `test-server/sdks/typescript/samples` directory:
 
 To run tests in playback mode:
 
