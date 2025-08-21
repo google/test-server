@@ -39,7 +39,7 @@ namespace TestServerSdk
     /// It will download the release asset from GitHub, verify its SHA256 checksum, extract it, and set executable permissions.
     /// The checksums are read from a 'checksums.json' file expected to be embeded into the TestServerSdk.dll.
     /// </summary>
-    public static async Task EnsureBinaryAsync(string outDir, string version = "v0.2.6")
+    public static async Task EnsureBinaryAsync(string outDir, string version = "v0.2.7")
     {
       var assembly = Assembly.GetExecutingAssembly();
       var resourceName = "TestServerSdk.checksums.json";
