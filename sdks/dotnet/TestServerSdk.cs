@@ -62,7 +62,7 @@ namespace TestServerSdk
       {
         var targetDir = Path.GetDirectoryName(p) ?? Path.GetFullPath(Directory.GetCurrentDirectory());
         Console.WriteLine($"[TestServerSdk] test-server not found at {p}. Installing into {targetDir}...");
-        BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.6").GetAwaiter().GetResult();
+        BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.7").GetAwaiter().GetResult();
         if (File.Exists(p)) return p;
         throw new FileNotFoundException($"[TestServerSdk] After installation, test-server binary still not found at: {p}");
       }

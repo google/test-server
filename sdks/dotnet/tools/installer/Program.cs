@@ -26,7 +26,7 @@ if (args.Length == 0)
 }
 
 string outDir = args[0];
-string version = args.Length > 1 ? args[1] : "v0.2.6";
+string version = args.Length > 1 ? args[1] : "v0.2.7";
 
 await BinaryInstaller.EnsureBinaryAsync(outDir, version);
 return 0;
