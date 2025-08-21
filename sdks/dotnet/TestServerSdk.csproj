@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     
-    <PackageVersion>0.1.1</PackageVersion>
+    <PackageVersion>0.1.2</PackageVersion>
     <Authors>Google LLC</Authors>
     <Description>A .NET SDK to manage the test-server process for integration testing.</Description>
     <PackageProjectUrl>https://github.com/google/test-server</PackageProjectUrl>
