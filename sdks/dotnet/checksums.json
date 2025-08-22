@@ -78,5 +78,15 @@
     "test-server_Windows_arm64.zip": "466137be1dad084fcdef86a8894080a2ef1086dfd3ee15bc123a6d2053515841",
     "test-server_Windows_i386.zip": "6980c83e2118ed739dad53af29dc302b78ec89804f7ff7d7b5e39dcadbab3e83",
     "test-server_Windows_x86_64.zip": "8a4e36c8fa2d17a256a31956a3cb2851d27a30f423449911caf0b3ec76b9a602"
+  },
+  "v0.2.7": {
+    "test-server_Darwin_arm64.tar.gz": "0fd90238ccf90d74daef781b972c8b864063a40563259f689444d4f0ed41fb14",
+    "test-server_Darwin_x86_64.tar.gz": "8b7853069a9c98585a8075a90db94e73f1a769494fa5ac097c00f5e0c0630f06",
+    "test-server_Linux_arm64.tar.gz": "5dd5ae382db835427a62f4e65d73952b6f6452b5690d6623414f343f04a0b5de",
+    "test-server_Linux_i386.tar.gz": "5ea339ae47b23ecb99488936fe6ac42b5ef4445b9b01e28c74cf78af24441b30",
+    "test-server_Linux_x86_64.tar.gz": "7880e8fd1d271123fa0a622c93c3b8e3839571f8c1c5eeef2e32af8165dd83bc",
+    "test-server_Windows_arm64.zip": "2688a3b78bda099bdda3a9b5edbb374543c181b29beffca3ee9d0927b00d060e",
+    "test-server_Windows_i386.zip": "3f6b39c18982195d9de9edc9d85ec40147840f28e4eec52af04517407e625a3b",
+    "test-server_Windows_x86_64.zip": "8ea201791b87c0c2ee8f0ec241f3e5a34bf1319502daf02eb7a00858be2ab1f9"
   }
 }

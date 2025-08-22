@@ -180,6 +180,11 @@ func (r *ReplayHTTPServer) writeResponse(w http.ResponseWriter, resp *store.Reco
 
 	w.WriteHeader(int(resp.StatusCode))
 
+	// When the response body is empty we return directly with the headers.
+	if len(resp.BodySegments) == 0 {
+		return nil
+	}
+
 	if !strings.Contains(req.URL, "alt=sse") {
 		jsonBytes, err := json.Marshal(resp.BodySegments[0])
 		if err != nil {

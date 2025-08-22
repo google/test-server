@@ -1,9 +1,0 @@
-b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d
-Server Address: github.com
-Port: 443
-Protocol: https
-********************************************************************************
-GET / HTTP/1.1
-Connection: keep-alive
-
-

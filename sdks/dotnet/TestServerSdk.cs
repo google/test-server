@@ -32,6 +32,8 @@ namespace TestServerSdk
     public required string Mode { get; set; } // "record" or "replay"
     public required string BinaryPath { get; set; }
 
+    public string TestServerSecrets { get; set; }
+
     public Action<string>? OnStdOut { get; set; }
     public Action<string>? OnStdErr { get; set; }
     public Action<int?, string>? OnExit { get; set; }
@@ -62,13 +64,13 @@ namespace TestServerSdk
       {
         var targetDir = Path.GetDirectoryName(p) ?? Path.GetFullPath(Directory.GetCurrentDirectory());
         Console.WriteLine($"[TestServerSdk] test-server not found at {p}. Installing into {targetDir}...");
-        BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.6").GetAwaiter().GetResult();
+        BinaryInstaller.EnsureBinaryAsync(targetDir, "v0.2.7").GetAwaiter().GetResult();
         if (File.Exists(p)) return p;
-        throw new FileNotFoundException($"After installation, test-server binary still not found at: {p}");
+        throw new FileNotFoundException($"[TestServerSdk] After installation, test-server binary still not found at: {p}");
       }
       catch (Exception ex)
       {
-        throw new FileNotFoundException($"TestServerOptions.BinaryPath was set but file not found and installer failed: {p}", ex);
+        throw new FileNotFoundException($"[TestServerSdk] TestServerOptions.BinaryPath was set but file not found and installer failed: {p}", ex);
       }
     }
 
@@ -84,6 +86,10 @@ namespace TestServerSdk
         UseShellExecute = false,
         CreateNoWindow = true
       };
+      if (_options.TestServerSecrets != null)
+      {
+        psi.Environment["TEST_SERVER_SECRETS"] = _options.TestServerSecrets;
+      }
       _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
       _process.OutputDataReceived += (s, e) => { if (e.Data != null) _options.OnStdOut?.Invoke(e.Data); };
       _process.ErrorDataReceived += (s, e) => { if (e.Data != null) _options.OnStdErr?.Invoke(e.Data); };
