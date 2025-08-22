@@ -23,7 +23,7 @@ const axios = require('axios');
 const extract = require('extract-zip');
 const tar = require('tar');
 const allExpectedChecksums = require('./checksums.json');
-const TEST_SERVER_VERSION = 'v0.2.6';
+const TEST_SERVER_VERSION = 'v0.2.7';
 
 const GITHUB_OWNER = 'google';
 const GITHUB_REPO = 'test-server';
@@ -169,9 +169,8 @@ function ensureBinaryIsExecutable(binaryPath, platform) {
 async function main() {
     const binaryPath = getBinaryPath();
     if (fs.existsSync(binaryPath)) {
-        console.log(`${PROJECT_NAME} binary already exists at ${binaryPath}. Skipping download.`);
-        ensureBinaryIsExecutable(binaryPath, os.platform());
-        return;
+        console.log(`${PROJECT_NAME} binary already exists at ${binaryPath}. Removing it for a fresh install.`);
+        fs.unlinkSync(binaryPath); // This deletes the file
     }
 
     if (!fs.existsSync(BIN_DIR)) {

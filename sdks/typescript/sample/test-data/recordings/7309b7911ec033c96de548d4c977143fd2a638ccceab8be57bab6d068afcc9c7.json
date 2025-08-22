@@ -1,0 +1,44 @@
+{
+  "recordID": "7309b7911ec033c96de548d4c977143fd2a638ccceab8be57bab6d068afcc9c7",
+  "interactions": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "/",
+        "request": "GET / HTTP/1.1",
+        "headers": {
+          "Connection": "keep-alive"
+        },
+        "bodySegments": [
+          null
+        ],
+        "previousRequest": "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d",
+        "serverAddress": "github.com",
+        "port": 443,
+        "protocol": "https"
+      },
+      "shaSum": "7309b7911ec033c96de548d4c977143fd2a638ccceab8be57bab6d068afcc9c7",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "max-age=0, private, must-revalidate",
+          "Content-Language": "en-US",
+          "Content-Security-Policy": "default-src 'none'; base-uri 'self'; child-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/; connect-src 'self' uploads.github.com www.githubstatus.com collector.github.com raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/ productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/ productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/ productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/ productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/ productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/ productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/ productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/ productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/ productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/ productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com wss://alive.github.com wss://alive-staging.github.com api.githubcopilot.com api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com github.githubassets.com; font-src github.githubassets.com; form-action 'self' github.com gist.github.com copilot-workspace.githubnext.com objects-origin.githubusercontent.com; frame-ancestors 'none'; frame-src viewscreen.githubusercontent.com notebooks.githubusercontent.com www.youtube-nocookie.com; img-src 'self' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com secured-user-images.githubusercontent.com/ user-images.githubusercontent.com/ private-user-images.githubusercontent.com opengraph.githubassets.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/ github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com images.ctfassets.net/8aevphvgewt8/; manifest-src 'self'; media-src github.com user-images.githubusercontent.com/ secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com github-production-user-asset-6210df.s3.amazonaws.com gist.github.com github.githubassets.com assets.ctfassets.net/8aevphvgewt8/ videos.ctfassets.net/8aevphvgewt8/; script-src github.githubassets.com; style-src 'unsafe-inline' github.githubassets.com; upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/",
+          "Content-Type": "text/html; charset=utf-8",
+          "Date": "Fri, 22 Aug 2025 20:32:45 GMT",
+          "Etag": "W/\"47ffde77ab8737f4500882e3d54c7641\"",
+          "Referrer-Policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
+          "Server": "github.com",
+          "Set-Cookie": "_gh_sess=SPS%2BbfmdbWFxOAa0ZhMMlj3p%2FbufNQJ9E63dKCinaLO%2Be9hsDTuZA5ppN%2BMm3IV4vI8rORyNmx54a%2Fzxw7jIJ3M7xBSH5Xi7cpcqjbCc3UQm7snyA1H0HEHX2vIBYZRYv3CqfTs5JVbzbotUOV4jBjHkUCuXlGxbr8sBpkipJskpBsNPjlDOKKbXrx%2FHTjXgWDU9LKz0aNtKPE6V6kLhCC1Z%2Bdq5NVuh6Kupb5p87koPffDOJSYHuhC3IwQV%2F9MB1J3BgaGxvfsmACs%2B39IGmA%3D%3D--uRBaSp2rwZXACE57--8aPXx9iS8wW2eX8wtV3vnA%3D%3D; Path=/; HttpOnly; Secure; SameSite=Lax, _octo=GH1.1.890224390.1755894770; Path=/; Domain=github.com; Expires=Sat, 22 Aug 2026 20:32:50 GMT; Secure; SameSite=Lax, logged_in=no; Path=/; Domain=github.com; Expires=Sat, 22 Aug 2026 20:32:50 GMT; HttpOnly; Secure; SameSite=Lax",
+          "Strict-Transport-Security": "max-age=31536000; includeSubdomains; preload",
+          "Vary": "X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With, Accept-Language,Accept-Encoding, Accept, X-Requested-With",
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "deny",
+          "X-Github-Request-Id": "C822:FC0EA:286BCB:29129B:68A8D3F2",
+          "X-Xss-Protection": "0"
+        }
+      }
+    }
+  ]
+}

@@ -24,7 +24,7 @@ from pathlib import Path
 import requests
 
 # --- Configuration ---
-TEST_SERVER_VERSION = "v0.2.6"
+TEST_SERVER_VERSION = "v0.2.7"
 GITHUB_OWNER = "google"
 GITHUB_REPO = "test-server"
 PROJECT_NAME = "test-server"
@@ -101,7 +101,7 @@ def download_and_verify(download_url, archive_path, version, archive_name):
         # Clean up partial download on failure
         if archive_path.exists():
             archive_path.unlink()
-        print(f"❌ Failed during download or verification: {e}")
+        print(f"Failed during download or verification: {e}")
         raise
 
 
@@ -151,7 +151,7 @@ def main():
         download_and_verify(download_url, archive_path, version, archive_name)
         extract_archive(archive_path, archive_extension)
         ensure_binary_is_executable(binary_path, go_os)
-        print(f"✅ {PROJECT_NAME} binary is ready at {binary_path}")
+        print(f"{PROJECT_NAME} binary is ready at {binary_path}")
     except Exception as e:
         sys.exit(1) # Exit with an error code
 
