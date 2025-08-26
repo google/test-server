@@ -22,13 +22,14 @@ import zipfile
 import json
 from pathlib import Path
 import requests
+from setuptools.command.bdist_wheel import bdist_wheel
+
 
 # --- Configuration ---
 TEST_SERVER_VERSION = "v0.2.7"
 GITHUB_OWNER = "google"
 GITHUB_REPO = "test-server"
 PROJECT_NAME = "test-server"
-BIN_DIR = Path(__file__).parent / "bin"
 
 CHECKSUMS_PATH = Path(__file__).parent / "checksums.json"
 try:
@@ -98,26 +99,24 @@ def download_and_verify(download_url, archive_path, version, archive_name):
         print("Checksum verified successfully.")
 
     except Exception as e:
-        # Clean up partial download on failure
         if archive_path.exists():
             archive_path.unlink()
         print(f"Failed during download or verification: {e}")
         raise
 
 
-def extract_archive(archive_path, archive_extension):
-    """Extracts the binary from the downloaded archive."""
-    print(f"Extracting binary from {archive_path} to {BIN_DIR}...")
+def extract_archive(archive_path, archive_extension, destination_dir):
+    """Extracts the binary from the downloaded archive into the destination."""
+    print(f"Extracting binary from {archive_path} to {destination_dir}...")
     try:
         if archive_extension == ".zip":
             with zipfile.ZipFile(archive_path, "r") as zip_ref:
-                zip_ref.extractall(BIN_DIR)
+                zip_ref.extractall(destination_dir)
         elif archive_extension == ".tar.gz":
             with tarfile.open(archive_path, "r:gz") as tar_ref:
-                tar_ref.extractall(BIN_DIR)
+                tar_ref.extractall(destination_dir)
         print("Extraction complete.")
     finally:
-        # Clean up the archive file
         if archive_path.exists():
             archive_path.unlink()
             print(f"Cleaned up {archive_path}.")
@@ -131,29 +130,42 @@ def ensure_binary_is_executable(binary_path, go_os):
         print(f"Set executable permission for {binary_path}")
 
 
-def main():
-    """Main function to orchestrate the installation."""
+def install_binary(bin_dir: Path):
+    """Main function to orchestrate the installation to a specific directory."""
     go_os, go_arch, archive_extension, binary_name = get_platform_details()
-    binary_path = BIN_DIR / binary_name
+    binary_path = bin_dir / binary_name
 
     if binary_path.exists():
         print(f"{PROJECT_NAME} binary already exists at {binary_path}. Removing it for a fresh install.")
-        binary_path.unlink()  # This deletes the file
+        binary_path.unlink()
 
-    BIN_DIR.mkdir(parents=True, exist_ok=True)
-    
+    bin_dir.mkdir(parents=True, exist_ok=True)
+
     version = TEST_SERVER_VERSION
     archive_name = f"{PROJECT_NAME}_{go_os}_{go_arch}{archive_extension}"
     download_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/{version}/{archive_name}"
-    archive_path = BIN_DIR / archive_name
+    archive_path = bin_dir / archive_name
 
     try:
         download_and_verify(download_url, archive_path, version, archive_name)
-        extract_archive(archive_path, archive_extension)
+        extract_archive(archive_path, archive_extension, bin_dir)
         ensure_binary_is_executable(binary_path, go_os)
         print(f"{PROJECT_NAME} binary is ready at {binary_path}")
     except Exception as e:
-        sys.exit(1) # Exit with an error code
+        print(f"An error occurred during binary installation: {e}")
+        sys.exit(1)
 
-if __name__ == "__main__":
-    main()
+
+# --- The Setuptools Hook ---
+class CustomBuild(bdist_wheel):
+    """Custom build command to download the binary into the correct build location."""
+    def run(self):
+        print("--- Executing CustomBuild hook to download binary! ---")
+
+        build_py = self.get_finalized_command('build_py')
+        build_dir = Path(build_py.build_lib)
+        bin_path = build_dir / 'test_server_sdk' / 'bin'
+
+        install_binary(bin_path)
+
+        super().run()

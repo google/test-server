@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "twine>=6.1.0", "packaging>=24.2", "pkginfo>=1.12.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-server-sdk"
+version = "0.1.0" # Required
+authors = [
+    { name = "Google LLC", email = "googleapis-packages@google.com" },
+]
+description = "A python wrapper for test-server." # Required
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "requests",
+    "PyYAML"
+]
+
+[project.urls]
+Homepage = "https://github.com/google/test-server/sdks/python"
+Issues = "https://github.com/google/test-server/issues"
+
+[tool.setuptools]
+cmdclass = { bdist_wheel = "install.CustomBuild" }
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+exclude = ["sample*"]

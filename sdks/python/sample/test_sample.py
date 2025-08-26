@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 
-from src.test_server_wrapper import TestServer
+from test_server_sdk.test_server_wrapper import TestServer
 
 SAMPLE_PACKAGE_ROOT = Path(__file__).resolve().parent
 CONFIG_FILE_PATH = SAMPLE_PACKAGE_ROOT / "test-data" / "config" / "test-server-config.yml"

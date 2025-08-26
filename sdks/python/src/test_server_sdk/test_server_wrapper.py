@@ -40,43 +40,13 @@ class TestServer:
         installer script.
         """
         binary_name = f"{PROJECT_NAME}.exe" if sys.platform == "win32" else PROJECT_NAME
-        binary_path = Path(__file__).parent.parent / "bin" / binary_name
+        binary_path = Path(__file__).parent / "bin" / binary_name
 
         # If the binary doesn't exist, try to install it
         if not binary_path.exists():
-            print(f"test-server binary not found at {binary_path}.")
-            print("Attempting to run the installer...")
-
-            # Assumes install.py is in the parent directory of the wrapper script
-            install_script_path = Path(__file__).parent.parent / "install.py"
-
-            if not install_script_path.exists():
-                raise FileNotFoundError(
-                    f"Installer script not found at {install_script_path}."
-                )
-
-            try:
-                # Use sys.executable to ensure we run with the same python interpreter
-                subprocess.run(
-                    [sys.executable, str(install_script_path)],
-                    check=True, # This will raise an exception if the script fails
-                    capture_output=True, # Hides installer output unless there's an error
-                    text=True
-                )
-                print("Installer script finished successfully.")
-            except subprocess.CalledProcessError as e:
-                # The installer script returned a non-zero exit code (an error)
-                print("Installer script failed!", file=sys.stderr)
-                print(f"STDOUT:\n{e.stdout}", file=sys.stderr)
-                print(f"STDERR:\n{e.stderr}", file=sys.stderr)
-                raise RuntimeError("Failed to install the test-server binary.") from e
-
-        if not binary_path.exists():
             raise FileNotFoundError(
-                f"test-server binary not found at {binary_path} even after "
-                "running the installer."
-            )
-
+                    f"test-server binary not found at {binary_path}."
+            )   
         return binary_path
 
     def _read_stream(self, stream, stream_name: str):
