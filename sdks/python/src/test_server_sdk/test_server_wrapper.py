@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import subprocess
+import os
 import sys
 import threading
 import time
@@ -30,6 +31,7 @@ class TestServer:
         self.config_path = Path(config_path).resolve()
         self.recording_dir = Path(recording_dir).resolve()
         self.mode = mode
+        self.teardown_timeout: Optional[int] = 5
         self.process: Optional[subprocess.Popen] = None
         self._stdout_thread: Optional[threading.Thread] = None
         self._stderr_thread: Optional[threading.Thread] = None
@@ -139,7 +141,7 @@ class TestServer:
         print(f"Stopping test-server process (PID: {self.process.pid})...")
         self.process.terminate()  # Sends SIGTERM (graceful shutdown)
         try:
-            self.process.wait(timeout=5)  # Wait up to 5 seconds
+            self.process.wait(timeout=self.teardown_timeout)
             print("Server terminated gracefully.")
         except subprocess.TimeoutExpired:
             print("Server did not respond to SIGTERM. Sending SIGKILL...")
