@@ -34,7 +34,7 @@ sdks/typescript/sample/dist/
 # Python SDK specific
 sdks/python/src/test_server_sdk/__pycache__
 sdks/python/__pycache__
-sdks/python/test_server_sdk.egg-info/
+sdks/python/src/test_server_sdk.egg-info
 
 # Python SDK Sample specific
 sdks/python/sample/__pycache__

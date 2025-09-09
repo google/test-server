@@ -22,21 +22,22 @@ import zipfile
 import json
 from pathlib import Path
 import requests
-from setuptools.command.bdist_wheel import bdist_wheel
-
+import subprocess
 
 # --- Configuration ---
 TEST_SERVER_VERSION = "v0.2.7"
 GITHUB_OWNER = "google"
 GITHUB_REPO = "test-server"
 PROJECT_NAME = "test-server"
+PROJECT_ROOT = Path(__file__).parent
 
-CHECKSUMS_PATH = Path(__file__).parent / "checksums.json"
+CHECKSUMS_PATH = PROJECT_ROOT / "checksums.json"
+
 try:
     with open(CHECKSUMS_PATH, "r") as f:
         ALL_EXPECTED_CHECKSUMS = json.load(f)
 except (FileNotFoundError, json.JSONDecodeError) as e:
-    print(f"Error loading checksums.json: {e}")
+    print(f"Error loading checksums.json: {e}", file=sys.stderr)
     sys.exit(1)
 
 
@@ -101,7 +102,7 @@ def download_and_verify(download_url, archive_path, version, archive_name):
     except Exception as e:
         if archive_path.exists():
             archive_path.unlink()
-        print(f"Failed during download or verification: {e}")
+        print(f"Failed during download or verification: {e}", file=sys.stderr)
         raise
 
 
@@ -129,6 +130,34 @@ def ensure_binary_is_executable(binary_path, go_os):
         os.chmod(binary_path, st.st_mode | stat.S_IEXEC)
         print(f"Set executable permission for {binary_path}")
 
+def verify_binary_usability(binary_path: Path) -> None:
+    """
+    Verifies the binary can be executed by running a simple command.
+    This helps catch corrupted downloads or architecture mismatches.
+    """
+    print(f"Verifying usability of binary at {binary_path}...")
+    try:
+        # Running with "--help" is a safe, standard way to check execution
+        subprocess.run(
+            [str(binary_path), "--help"],
+            capture_output=True,
+            text=True,
+            check=True,  # This will raise CalledProcessError on non-zero exit codes
+            timeout=10
+        )
+        print("Binary is executable and responding correctly.")
+    except (subprocess.CalledProcessError, FileNotFoundError, PermissionError, subprocess.TimeoutExpired) as e:
+        print(f"ERROR: The binary at {binary_path} is not usable. Error: {e}", file=sys.stderr)
+        # Clean up the bad binary
+        if binary_path.exists():
+            binary_path.unlink()
+        raise RuntimeError(
+            f"The downloaded binary at {binary_path} could not be executed. "
+            "This can mean a corrupted download or an incorrect binary for your OS/architecture. "
+            "The invalid binary has been removed. Please try running the installation again. "
+            "Run: download_golang_executable"
+        ) from e
+
 
 def install_binary(bin_dir: Path):
     """Main function to orchestrate the installation to a specific directory."""
@@ -150,22 +179,26 @@ def install_binary(bin_dir: Path):
         download_and_verify(download_url, archive_path, version, archive_name)
         extract_archive(archive_path, archive_extension, bin_dir)
         ensure_binary_is_executable(binary_path, go_os)
-        print(f"{PROJECT_NAME} binary is ready at {binary_path}")
+        verify_binary_usability(binary_path)
+        print(f"\n{PROJECT_NAME} binary is ready at {binary_path}")
     except Exception as e:
-        print(f"An error occurred during binary installation: {e}")
+        print(f"\nAn error occurred during binary installation: {e}", file=sys.stderr)
+        # Re-raise the exception to be caught by the entry point function
+        raise
+
+
+
+def main_downloader_function():
+    """
+    Entry point that determines the install location and calls the installation logic.
+    """
+    install_location = PROJECT_ROOT / "bin"
+    
+    try:
+        install_binary(install_location)
+    except Exception:
         sys.exit(1)
 
 
-# --- The Setuptools Hook ---
-class CustomBuild(bdist_wheel):
-    """Custom build command to download the binary into the correct build location."""
-    def run(self):
-        print("--- Executing CustomBuild hook to download binary! ---")
-
-        build_py = self.get_finalized_command('build_py')
-        build_dir = Path(build_py.build_lib)
-        bin_path = build_dir / 'test_server_sdk' / 'bin'
-
-        install_binary(bin_path)
-
-        super().run()
+if __name__ == "__main__":
+    main_downloader_function()

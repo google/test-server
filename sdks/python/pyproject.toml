@@ -28,9 +28,8 @@ dependencies = [
 Homepage = "https://github.com/google/test-server/sdks/python"
 Issues = "https://github.com/google/test-server/issues"
 
-[tool.setuptools]
-cmdclass = { bdist_wheel = "install.CustomBuild" }
+[tool.setuptools.package-data]
+"*" = ["*.*"]
 
-[tool.setuptools.packages.find]
-where = ["src", "."]
-exclude = ["sample*"]
+[project.scripts]
+download_golang_executable = "test_server_sdk.install:main_downloader_function"

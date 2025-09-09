@@ -15,7 +15,7 @@ pip3 install -r requirements.txt
 
 ```sh
 # Ensure a clean build
-rm -rf build/ dist/ *.egg-info/ src/test_server_sdk/bin/ && find . -depth -name "__pycache__" -type d -exec rm -rf {} \;
+rm -rf build/ dist/ src/*.egg-info/ *.egg-info && find . -depth -name "__pycache__" -type d -exec rm -rf {} \;
 # Build the python wheel
 python3 -m build
 ```
@@ -25,13 +25,17 @@ python3 -m build
 ## Installation of the Python Test Server sdk
 
 ```sh
+# Ensure a clean installation
+pip3 uninstall test-server-sdk -y
 # Install from the dist, use --force-reinstall to alwasy install fresh
-pip install --force-reinstall dist/test_server_sdk-0.1.0-py3-none-any.whl
+pip3 install --force-reinstall dist/test_server_sdk-0.1.0-py3-none-any.whl
+# This is the command to download and verify the underlying golang executabel.
+download_golang_executable
 
 # Check on the files
 pip show -f test_server_sdk
 ```
-You should see something very similar to this output, note tehat the `test_server_sdk/bin/` folder exist and contains the golang test-server:
+You should see something very similar to this output, note tehat the `../../../bin/download_golang_executable` entry exist.
 ```
 Name: test-server-sdk
 Version: 0.1.0
@@ -44,25 +48,22 @@ Location: /usr/local/google/home/wanlindu/env/lib/python3.13/site-packages
 Requires: PyYAML, requests
 Required-by:
 Files:
-  src/test_server_sdk/__init__.py
-  src/test_server_sdk/__pycache__/__init__.cpython-313.pyc
-  src/test_server_sdk/__pycache__/test_server_wrapper.cpython-313.pyc
-  src/test_server_sdk/test_server_wrapper.py
+  ../../../bin/download_golang_executable
   test_server_sdk-0.1.0.dist-info/INSTALLER
   test_server_sdk-0.1.0.dist-info/METADATA
   test_server_sdk-0.1.0.dist-info/RECORD
   test_server_sdk-0.1.0.dist-info/REQUESTED
   test_server_sdk-0.1.0.dist-info/WHEEL
   test_server_sdk-0.1.0.dist-info/direct_url.json
+  test_server_sdk-0.1.0.dist-info/entry_points.txt
   test_server_sdk-0.1.0.dist-info/licenses/LICENSE
   test_server_sdk-0.1.0.dist-info/top_level.txt
   test_server_sdk/__init__.py
   test_server_sdk/__pycache__/__init__.cpython-313.pyc
+  test_server_sdk/__pycache__/install.cpython-313.pyc
   test_server_sdk/__pycache__/test_server_wrapper.cpython-313.pyc
-  test_server_sdk/bin/CHANGELOG.md
-  test_server_sdk/bin/LICENSE
-  test_server_sdk/bin/README.md
-  test_server_sdk/bin/test-server
+  test_server_sdk/checksums.json
+  test_server_sdk/install.py
   test_server_sdk/test_server_wrapper.py
   ```
 
