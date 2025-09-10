@@ -65,7 +65,7 @@ var sdksToUpdate = []SDKConfig{
 	{
 		Name:              "Dotnet",
 		SDKDir:            "sdks/dotnet",
-		InstallScriptFile: []string{"BinaryInstaller.cs", "TestServerSdk.cs"},
+		InstallScriptFile: []string{"BinaryInstaller.cs", "TestServerSdk.cs", "tools/installer/Program.cs"},
 		ChecksumsJSONFile: "checksums.json",
 		VersionVarName:    "TEST_SERVER_VERSION",
 	},

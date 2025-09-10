@@ -17,6 +17,7 @@
 using System;
 using System.Threading.Tasks;
 using TestServerSdk;
+public const string TEST_SERVER_VERSION = "v0.2.7";
 
 // This program is just a thin wrapper around the installer logic in the SDK.
 if (args.Length == 0)
@@ -26,7 +27,7 @@ if (args.Length == 0)
 }
 
 string outDir = args[0];
-string version = args.Length > 1 ? args[1] : "v0.2.7";
+string version = args.Length > 1 ? args[1] : TEST_SERVER_VERSION;
 
 await BinaryInstaller.EnsureBinaryAsync(outDir, version);
 return 0;
