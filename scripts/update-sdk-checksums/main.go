@@ -27,45 +27,48 @@ import (
 	"strings"
 )
 
+// --- General Project Configuration ---
 const (
 	githubOwner = "google"
 	githubRepo  = "test-server"
 	projectName = "test-server"
-
-	sdkDir               = "sdks/typescript"
-	postinstallJSFile    = "postinstall.js"
-	checksumsJSONFile    = "checksums.json"
-	testServerVersionVar = "TEST_SERVER_VERSION"
 )
 
-var (
-	sdkPostinstallPath   string
-	sdkChecksumsJSONPath string
-)
+// --- SDK Specific Configurations ---
 
-func initPaths() error {
-	// Determine the project root. This assumes the script might be run
-	// from the project root or from within its own directory 'scripts/update-sdk-checksums'.
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory: %w", err)
-	}
+// SDKConfig holds the unique properties for each SDK that needs updating.
+type SDKConfig struct {
+	Name              string   // e.g., "TypeScript", "Python"
+	SDKDir            string   // Relative path to the SDK's directory
+	InstallScriptFile []string // A list of files to update with the new version
+	ChecksumsJSONFile string   // e.g., "checksums.json"
+	VersionVarName    string   // The name of the version constant/variable in the install script
+}
 
-	// If current working directory is 'scripts/update-sdk-checksums', go up two levels.
-	// Otherwise, assume we are already at the project root.
-	if filepath.Base(wd) == "update-sdk-checksums" && filepath.Base(filepath.Dir(wd)) == "scripts" {
-		wd = filepath.Dir(filepath.Dir(wd))
-	}
-
-	sdkPostinstallPath = filepath.Join(wd, sdkDir, postinstallJSFile)
-	sdkChecksumsJSONPath = filepath.Join(wd, sdkDir, checksumsJSONFile)
-
-	// Verify postinstall.js path exists to give early feedback
-	if _, err := os.Stat(sdkPostinstallPath); os.IsNotExist(err) {
-		return fmt.Errorf("postinstall.js not found at %s. Ensure you are running the script from the project root, or the script needs path adjustment", sdkPostinstallPath)
-	}
-	// checksums.json might not exist initially, which is fine for updateChecksumsJSON.
-	return nil
+// sdksToUpdate is the list of all SDKs this script should manage.
+// Add a new entry here to support another SDK.
+var sdksToUpdate = []SDKConfig{
+	{
+		Name:              "TypeScript",
+		SDKDir:            "sdks/typescript",
+		InstallScriptFile: []string{"postinstall.js"},
+		ChecksumsJSONFile: "checksums.json",
+		VersionVarName:    "TEST_SERVER_VERSION",
+	},
+	{
+		Name:              "Python",
+		SDKDir:            "sdks/python/src/test_server_sdk",
+		InstallScriptFile: []string{"install.py"},
+		ChecksumsJSONFile: "checksums.json",
+		VersionVarName:    "TEST_SERVER_VERSION",
+	},
+	{
+		Name:              "Dotnet",
+		SDKDir:            "sdks/dotnet",
+		InstallScriptFile: []string{"BinaryInstaller.cs", "TestServerSdk.cs"},
+		ChecksumsJSONFile: "checksums.json",
+		VersionVarName:    "TEST_SERVER_VERSION",
+	},
 }
 
 func fetchChecksumsTxt(version string) (string, error) {
@@ -119,24 +122,23 @@ func parseChecksumsTxt(checksumsText string) (map[string]string, error) {
 	return checksums, nil
 }
 
-func updateChecksumsJSON(newVersion string, newChecksumsMap map[string]string) error {
-	allChecksums := make(map[string]map[string]string)
+func updateChecksumsJSON(checksumsJSONPath, newVersion string, newChecksumsMap map[string]string) error {
+	allChecksums := make(map[string]map[string]string) // Reset if unmarshal fails
 
-	if _, err := os.Stat(sdkChecksumsJSONPath); err == nil { // Check if file exists
-		existingJSON, errFileRead := os.ReadFile(sdkChecksumsJSONPath)
+	if _, err := os.Stat(checksumsJSONPath); err == nil {
+		existingJSON, errFileRead := os.ReadFile(checksumsJSONPath)
 		if errFileRead != nil {
-			return fmt.Errorf("failed to read existing %s: %w", sdkChecksumsJSONPath, errFileRead)
+			return fmt.Errorf("failed to read existing %s: %w", checksumsJSONPath, errFileRead)
 		}
-		if len(existingJSON) > 0 { // Only unmarshal if not empty
+		if len(existingJSON) > 0 {
 			if errUnmarshal := json.Unmarshal(existingJSON, &allChecksums); errUnmarshal != nil {
-				fmt.Printf("Warning: Could not parse existing %s, will overwrite. Error: %v\n", sdkChecksumsJSONPath, errUnmarshal)
-				allChecksums = make(map[string]map[string]string) // Reset if unmarshal fails
+				fmt.Printf("Warning: Could not parse existing %s, will overwrite. Error: %v\n", checksumsJSONPath, errUnmarshal)
+				allChecksums = make(map[string]map[string]string)
 			}
 		}
 	} else if !os.IsNotExist(err) { // If error is not "file does not exist", then it's a problem
-		return fmt.Errorf("failed to stat %s: %w", sdkChecksumsJSONPath, err)
+		return fmt.Errorf("failed to stat %s: %w", checksumsJSONPath, err)
 	}
-	// If file does not exist, allChecksums remains an empty map, which is fine.
 
 	allChecksums[newVersion] = newChecksumsMap
 	updatedJSON, err := json.MarshalIndent(allChecksums, "", "  ")
@@ -144,47 +146,43 @@ func updateChecksumsJSON(newVersion string, newChecksumsMap map[string]string) e
 		return fmt.Errorf("failed to marshal updated checksums JSON: %w", err)
 	}
 
-	// Append a newline character to match the Node script's output and common file ending.
 	updatedJSON = append(updatedJSON, '\n')
 
-	err = os.WriteFile(sdkChecksumsJSONPath, updatedJSON, 0644)
+	err = os.WriteFile(checksumsJSONPath, updatedJSON, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write updated %s: %w", sdkChecksumsJSONPath, err)
+		return fmt.Errorf("failed to write updated %s: %w", checksumsJSONPath, err)
 	}
-	fmt.Printf("Updated %s with checksums for version %s.\n", sdkChecksumsJSONPath, newVersion)
+	fmt.Printf("Updated %s with checksums for version %s.\n", checksumsJSONPath, newVersion)
 	return nil
 }
 
-func updatePostinstallVersion(newVersion string) error {
-	content, err := os.ReadFile(sdkPostinstallPath)
+func updateVersionInFile(filePath, newVersion, varName string) error {
+	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to read %s: %w", sdkPostinstallPath, err)
+		return fmt.Errorf("failed to read %s: %w", filePath, err)
 	}
 
-	re := regexp.MustCompile(`(?m)^\s*const TEST_SERVER_VERSION = .*$`)
+	re := regexp.MustCompile(fmt.Sprintf(`(?m)(^\s*.*\b%s\b\s*=\s*['"]).*?(['"].*$)`, varName))
 
 	if !re.Match(content) {
-		return fmt.Errorf("could not find '%s' constant in %s. Pattern not matched: %s", testServerVersionVar, sdkPostinstallPath, re.String())
+		// If the variable isn't in the file, it's not an error. Just skip it.
+		fmt.Printf("Note: Did not find '%s' in %s, skipping update for this file.\n", varName, filePath)
+		return nil
 	}
 
-	replacement := fmt.Sprintf("const TEST_SERVER_VERSION = '%s';", newVersion)
+	replacement := []byte(fmt.Sprintf(`${1}%s${2}`, newVersion))
 
-	updatedContent := re.ReplaceAllString(string(content), replacement)
+	updatedContent := re.ReplaceAll(content, replacement)
 
-	err = os.WriteFile(sdkPostinstallPath, []byte(updatedContent), 0644)
+	err = os.WriteFile(filePath, updatedContent, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write updated %s: %w", sdkPostinstallPath, err)
+		return fmt.Errorf("failed to write updated %s: %w", filePath, err)
 	}
-	fmt.Printf("Updated %s in %s to %s.\n", testServerVersionVar, sdkPostinstallPath, newVersion)
+	fmt.Printf("Updated %s in %s to %s.\n", varName, filePath, newVersion)
 	return nil
 }
 
 func main() {
-	if err := initPaths(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing paths: %v\n", err)
-		os.Exit(1)
-	}
-
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "Usage: go run scripts/update-sdk-checksums/main.go <version_tag>")
 		fmt.Fprintln(os.Stderr, "Example: go run scripts/update-sdk-checksums/main.go v0.1.0")
@@ -196,8 +194,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Updating TypeScript SDK to use test-server version: %s\n", newVersion)
-
+	fmt.Printf("Fetching checksums for test-server version: %s\n", newVersion)
 	checksumsText, err := fetchChecksumsTxt(newVersion)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\nError fetching checksums.txt: %v\n", err)
@@ -210,19 +207,39 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := updateChecksumsJSON(newVersion, newChecksumsMap); err != nil {
-		fmt.Fprintf(os.Stderr, "\nError updating %s: %v\n", sdkChecksumsJSONPath, err)
+	var failedSDKs []string
+
+	for _, sdk := range sdksToUpdate {
+		fmt.Printf("\n--- Updating %s SDK ---\n", sdk.Name)
+
+		sdkChecksumsJSONPath := filepath.Join(sdk.SDKDir, sdk.ChecksumsJSONFile)
+		if err := updateChecksumsJSON(sdkChecksumsJSONPath, newVersion, newChecksumsMap); err != nil {
+			fmt.Fprintf(os.Stderr, "Error updating %s: %v\n", sdkChecksumsJSONPath, err)
+			failedSDKs = append(failedSDKs, sdk.Name)
+			continue
+		}
+
+		var sdkScriptUpdateFailed bool
+		for _, scriptFile := range sdk.InstallScriptFile {
+			sdkInstallScriptPath := filepath.Join(sdk.SDKDir, scriptFile)
+			if err := updateVersionInFile(sdkInstallScriptPath, newVersion, sdk.VersionVarName); err != nil {
+				fmt.Fprintf(os.Stderr, "Error updating %s: %v\n", sdkInstallScriptPath, err)
+				sdkScriptUpdateFailed = true
+				break
+			}
+		}
+
+		if sdkScriptUpdateFailed {
+			failedSDKs = append(failedSDKs, sdk.Name)
+			continue // Move to the next SDK
+		}
+	}
+
+	if len(failedSDKs) > 0 {
+		fmt.Fprintf(os.Stderr, "\nUpdate failed for the following SDKs: %v\n", failedSDKs)
 		os.Exit(1)
 	}
 
-	if err := updatePostinstallVersion(newVersion); err != nil {
-		fmt.Fprintf(os.Stderr, "\nError updating %s: %v\n", sdkPostinstallPath, err)
-		os.Exit(1)
-	}
-
-	fmt.Println("\nSuccessfully updated SDK checksums and version.")
-	fmt.Println("Please review the changes in:")
-	fmt.Printf("  - %s\n", sdkChecksumsJSONPath)
-	fmt.Printf("  - %s\n", sdkPostinstallPath)
+	fmt.Println("\nSuccessfully updated all SDK checksums and versions.")
 	fmt.Println("Then commit them to your repository.")
 }

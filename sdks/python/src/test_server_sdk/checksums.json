@@ -79,7 +79,7 @@
     "test-server_Windows_i386.zip": "6980c83e2118ed739dad53af29dc302b78ec89804f7ff7d7b5e39dcadbab3e83",
     "test-server_Windows_x86_64.zip": "8a4e36c8fa2d17a256a31956a3cb2851d27a30f423449911caf0b3ec76b9a602"
   },
-    "v0.2.7": {
+  "v0.2.7": {
     "test-server_Darwin_arm64.tar.gz": "0fd90238ccf90d74daef781b972c8b864063a40563259f689444d4f0ed41fb14",
     "test-server_Darwin_x86_64.tar.gz": "8b7853069a9c98585a8075a90db94e73f1a769494fa5ac097c00f5e0c0630f06",
     "test-server_Linux_arm64.tar.gz": "5dd5ae382db835427a62f4e65d73952b6f6452b5690d6623414f343f04a0b5de",

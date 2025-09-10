@@ -33,13 +33,14 @@ namespace TestServerSdk
     private const string GithubOwner = "google";
     private const string GithubRepo = "test-server";
     private const string ProjectName = "test-server";
+    public const string TEST_SERVER_VERSION = "v0.2.7";
 
     /// <summary>
     /// Ensures the test-server binary for the given version is present in the specified output directory.
     /// It will download the release asset from GitHub, verify its SHA256 checksum, extract it, and set executable permissions.
     /// The checksums are read from a 'checksums.json' file expected to be embeded into the TestServerSdk.dll.
     /// </summary>
-    public static async Task EnsureBinaryAsync(string outDir, string version = "v0.2.7")
+    public static async Task EnsureBinaryAsync(string outDir, string version = TEST_SERVER_VERSION)
     {
       var assembly = Assembly.GetExecutingAssembly();
       var resourceName = "TestServerSdk.checksums.json";
