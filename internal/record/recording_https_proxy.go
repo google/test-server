@@ -135,7 +135,7 @@ func (r *RecordingHTTPSProxy) redactRequest(req *http.Request) (*store.RecordedR
 }
 
 func (r *RecordingHTTPSProxy) proxyRequest(w http.ResponseWriter, req *http.Request) (*http.Response, []byte, error) {
-	url := fmt.Sprintf("https://%s:%d%s", r.config.TargetHost, r.config.TargetPort, req.URL.Path)
+	url := fmt.Sprintf("%s://%s:%d%s", r.config.TargetType, r.config.TargetHost, r.config.TargetPort, req.URL.Path)
 	if req.URL.RawQuery != "" {
 		url += "?" + req.URL.RawQuery
 	}
