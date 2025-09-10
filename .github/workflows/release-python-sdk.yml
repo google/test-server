@@ -1,0 +1,45 @@
+# .github/workflows/release-python-sdk.yml
+
+name: Release Python SDK
+
+# This workflow runs when a tag starting with 'sdks/python/v' is pushed
+on:
+  push:
+    tags:
+      - 'sdks/python/v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    name: Build Python SDK artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install build dependencies
+        run: pip install build twine
+
+      - name: Build Python wheel and source distribution
+        run: python3 -m build
+        working-directory: ./sdks/python
+
+      - name: Create GitHub Release and Upload Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          # This will upload all files from the build output directory
+          # (e.g., your-package-0.2.0-py3-none-any.whl and your-package-0.2.0.tar.gz)
+          files: sdks/python/dist/*
+          # This will create a draft release require teammate to manually publish, once
+          # we are confident with the release process, we can set draft: false, which
+          # will automatic create the release.
+          draft: true

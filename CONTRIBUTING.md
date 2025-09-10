@@ -91,3 +91,28 @@ After a new `test-server` binary is released, you need to update the checksums p
 6.  Publish the new version to npm following internal guidance at go/wombat-dressing-room. (When prompted,
     create a package specific publish token for  `test-server-sdk`.)
   
+### Release python sdk
+
+Publishing Python sdk is a relatively independent process, you can release python sdk without
+any change on golang `test-server` binary.
+
+1.  Ensure your local `main` branch is up-to-date and clean:
+    ```sh
+    git checkout main && git pull origin main && git clean -xdf
+    ```
+2. Update the version in `sdks/python/pyproject.toml`, create and merge the PR.
+    ```
+    git add .
+    git commit -m "chore: Prepare for Python SDK release v0.1.0"
+    git push origin release/python-v0.1.0
+    ```
+4. Find the current version of the python sdk in `sdks/python/pyproject.toml`. And
+   find the current golang test-server version, make sure 
+    `sdks/python/src/test-server-sdk/checksums.json` include this version.
+3.  Create and push a new version tag. For example, for version `sdks/python/v0.1.0-core.0.2.8`:
+    ```sh
+    git tag -a sdks/python/v0.1.0-core.0.2.8 -m "Release Python SDK v0.1.0 for Core v0.2.8"
+    git push origin sdks/python/v0.1.0-core.0.2.8
+    ```
+4. Find the draft release, verify the executable is built and uplaoaded successfully.
+5. Publish the relase
