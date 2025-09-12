@@ -203,6 +203,11 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 
 	recordPath := filepath.Join(r.recordingDir, fileName+".json")
 
+	recordDir := filepath.Dir(recordPath)
+    if err := os.MkdirAll(recordDir, 0755); err != nil {
+        return err
+    }
+
 	// Default to overwriting the file.
 	fileMode := os.O_TRUNC
 	file, err := os.OpenFile(recordPath, fileMode|os.O_CREATE|os.O_WRONLY, 0644)
