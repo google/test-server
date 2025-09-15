@@ -1,0 +1,49 @@
+{
+  "recordID": "python-sample-test-single-name",
+  "interactions": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "/",
+        "request": "GET / HTTP/1.1",
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "Connection": "keep-alive",
+          "Test-Name": "python-sample-test-single-name",
+          "User-Agent": "python-requests/2.32.5"
+        },
+        "bodySegments": [
+          null
+        ],
+        "previousRequest": "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d",
+        "serverAddress": "github.com",
+        "port": 443,
+        "protocol": "https"
+      },
+      "shaSum": "1a786dc6d04c039bf6dac4945967c846dd1ffa978a1a7f7073014c19d6cdd131",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "max-age=0, private, must-revalidate",
+          "Content-Encoding": "gzip",
+          "Content-Language": "en-US",
+          "Content-Security-Policy": "default-src 'none'; base-uri 'self'; child-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/; connect-src 'self' uploads.github.com www.githubstatus.com collector.github.com raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net/ productionresultssa1.blob.core.windows.net/ productionresultssa2.blob.core.windows.net/ productionresultssa3.blob.core.windows.net/ productionresultssa4.blob.core.windows.net/ productionresultssa5.blob.core.windows.net/ productionresultssa6.blob.core.windows.net/ productionresultssa7.blob.core.windows.net/ productionresultssa8.blob.core.windows.net/ productionresultssa9.blob.core.windows.net/ productionresultssa10.blob.core.windows.net/ productionresultssa11.blob.core.windows.net/ productionresultssa12.blob.core.windows.net/ productionresultssa13.blob.core.windows.net/ productionresultssa14.blob.core.windows.net/ productionresultssa15.blob.core.windows.net/ productionresultssa16.blob.core.windows.net/ productionresultssa17.blob.core.windows.net/ productionresultssa18.blob.core.windows.net/ productionresultssa19.blob.core.windows.net/ github-production-repository-image-32fea6.s3.amazonaws.com github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com wss://alive.github.com wss://alive-staging.github.com api.githubcopilot.com api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com github.githubassets.com edge.fullstory.com rs.fullstory.com; font-src github.githubassets.com; form-action 'self' github.com gist.github.com copilot-workspace.githubnext.com objects-origin.githubusercontent.com; frame-ancestors 'none'; frame-src viewscreen.githubusercontent.com notebooks.githubusercontent.com www.youtube-nocookie.com; img-src 'self' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com secured-user-images.githubusercontent.com/ user-images.githubusercontent.com/ private-user-images.githubusercontent.com opengraph.githubassets.com marketplace-screenshots.githubusercontent.com/ copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/ github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com spotlights-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com images.ctfassets.net/8aevphvgewt8/; manifest-src 'self'; media-src github.com user-images.githubusercontent.com/ secured-user-images.githubusercontent.com/ private-user-images.githubusercontent.com github-production-user-asset-6210df.s3.amazonaws.com gist.github.com github.githubassets.com assets.ctfassets.net/8aevphvgewt8/ videos.ctfassets.net/8aevphvgewt8/; script-src github.githubassets.com; style-src 'unsafe-inline' github.githubassets.com; upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/",
+          "Content-Type": "text/html; charset=utf-8",
+          "Date": "Mon, 15 Sep 2025 17:58:03 GMT",
+          "Etag": "W/\"cd488b2ea2ae9702b6652dfcb4294b9f\"",
+          "Referrer-Policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
+          "Server": "github.com",
+          "Set-Cookie": "_gh_sess=w5DaXbsbx%2F2PlXqycHl0ShvuHiZnHqmL5iYuP%2FD59y8HvO9KC4xSzq9mDzz6ZnENbxpU8MNfwSO8l8kUlKs47gnCup9ikRBOw%2Fam%2FU53gJ0t0RZguRAbej9OLML8jl9A%2FVggEYSJYo1A4JGuEso3uDJMMlbmp2fw1uitkAsMrl2ExUMs35uptt4R1Z3tx631YsjOGz64QlW1MZWbHQzbM0hf3Kd98%2BXJopJnudZrfxesMw%2FyOoNEWclXZS7XDWN68XKAtQl7Nqq1kS4ShsuDPQ%3D%3D--vnkZeXNoz4iRMuQH--S4gx9ntAHwkRRafwzQrJhA%3D%3D; Path=/; HttpOnly; Secure; SameSite=Lax, _octo=GH1.1.831469942.1757959087; Path=/; Domain=github.com; Expires=Tue, 15 Sep 2026 17:58:07 GMT; Secure; SameSite=Lax, logged_in=no; Path=/; Domain=github.com; Expires=Tue, 15 Sep 2026 17:58:07 GMT; HttpOnly; Secure; SameSite=Lax",
+          "Strict-Transport-Security": "max-age=31536000; includeSubdomains; preload",
+          "Vary": "X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With, Accept-Language,Accept-Encoding, Accept, X-Requested-With",
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "deny",
+          "X-Github-Request-Id": "D872:2A9986:920E5EB:96857C2:68C853AF",
+          "X-Xss-Protection": "0"
+        }
+      }
+    }
+  ]
+}
