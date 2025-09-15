@@ -17,7 +17,7 @@
 using System;
 using System.Threading.Tasks;
 using TestServerSdk;
-public const string TEST_SERVER_VERSION = "v0.2.7";
+public const string TEST_SERVER_VERSION = "v0.2.8";
 
 // This program is just a thin wrapper around the installer logic in the SDK.
 if (args.Length == 0)

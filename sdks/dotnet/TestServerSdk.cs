@@ -45,7 +45,7 @@ namespace TestServerSdk
     private Process? _process;
     private readonly TestServerOptions _options;
     private readonly string _binaryPath;
-    public const string TEST_SERVER_VERSION = "v0.2.7";
+    public const string TEST_SERVER_VERSION = "v0.2.8";
 
     public TestServerProcess(TestServerOptions options)
     {

@@ -25,7 +25,7 @@ import requests
 import subprocess
 
 # --- Configuration ---
-TEST_SERVER_VERSION = "v0.2.7"
+TEST_SERVER_VERSION = "v0.2.8"
 GITHUB_OWNER = "google"
 GITHUB_REPO = "test-server"
 PROJECT_NAME = "test-server"
