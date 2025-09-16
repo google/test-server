@@ -112,8 +112,16 @@ func readBody(req *http.Request) (map[string]any, error) {
 	}
 	err = json.Unmarshal(body, &resultMap)
 	if err != nil {
-		log.Fatalf("Error unmarshaling JSON: %v", err)
-		return nil, err
+		contentType := http.DetectContentType(body)
+		isBinary := strings.HasPrefix(contentType, "image/") ||
+			strings.HasPrefix(contentType, "video/") ||
+			strings.HasPrefix(contentType, "audio/") ||
+			contentType == "application/pdf" ||
+			contentType == "application/octet-stream"
+		if !isBinary {
+			log.Printf("Error unmarshaling JSON: %v", err)
+			return nil, err
+		}
 	}
 	// Restore the request body for further use.
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
