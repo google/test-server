@@ -1,0 +1,56 @@
+{
+  "recordID": "1bb8bed231ca5e50ed5cb037d5c4d33c6fdaa9357433c647c499c6903a69def3",
+  "interactions": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/upload/v1beta/files?upload_id=AAwnv3IAwQ76sSSWtkOp94W-nNQLAGzqq5WadndVyvjNryp6rnZEJJ1_sO2ntd0p12NICkChbd2zSZVpsUM3qr2nEXhC6DIXeCJtvsS3bEH1Iw\u0026upload_protocol=resumable",
+        "request": "POST /upload/v1beta/files?upload_id=AAwnv3IAwQ76sSSWtkOp94W-nNQLAGzqq5WadndVyvjNryp6rnZEJJ1_sO2ntd0p12NICkChbd2zSZVpsUM3qr2nEXhC6DIXeCJtvsS3bEH1Iw\u0026upload_protocol=resumable HTTP/1.1",
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "Connection": "keep-alive",
+          "Content-Length": "394671",
+          "X-Goog-Upload-Command": "upload, finalize",
+          "X-Goog-Upload-Offset": "0"
+        },
+        "bodySegments": [
+          null
+        ],
+        "previousRequest": "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d",
+        "serverAddress": "generativelanguage.googleapis.com",
+        "port": 443,
+        "protocol": "https"
+      },
+      "shaSum": "c68c1d24af03f4c1b178db5de0a98fac46a05cc85b5b613d3fbd36b1c677d699",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Length": "505",
+          "Content-Type": "application/json; charset=UTF-8",
+          "Date": "Tue, 16 Sep 2025 17:09:16 GMT",
+          "Server": "UploadServer",
+          "Vary": "Origin, X-Origin, Referer",
+          "X-Goog-Upload-Status": "final",
+          "X-Guploader-Uploadid": "AAwnv3IAwQ76sSSWtkOp94W-nNQLAGzqq5WadndVyvjNryp6rnZEJJ1_sO2ntd0p12NICkChbd2zSZVpsUM3qr2nEXhC6DIXeCJtvsS3bEH1Iw"
+        },
+        "bodySegments": [
+          {
+            "file": {
+              "createTime": "2025-09-16T17:09:16.260393Z",
+              "expirationTime": "2025-09-18T17:09:15.811243885Z",
+              "mimeType": "image/jpeg",
+              "name": "files/6xve7iakq5ng",
+              "sha256Hash": "NzQ1MDVjZDc1OTJiMTBiYzJkNGU5YzRhYTQyOTg2NmRlNzNmNDAzZGIxMWVkZDk1YjViNDAwNGFlYTdlMTM3Ng==",
+              "sizeBytes": "394671",
+              "source": "UPLOADED",
+              "state": "ACTIVE",
+              "updateTime": "2025-09-16T17:09:16.260393Z",
+              "uri": "https://generativelanguage.googleapis.com/v1beta/files/6xve7iakq5ng"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
