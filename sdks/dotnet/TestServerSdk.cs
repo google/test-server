@@ -27,12 +27,12 @@ namespace TestServerSdk
 {
   public class TestServerOptions
   {
-    public required string ConfigPath { get; set; }
-    public required string RecordingDir { get; set; }
-    public required string Mode { get; set; } // "record" or "replay"
-    public required string BinaryPath { get; set; }
+    public string ConfigPath { get; set; } = "";
+    public string RecordingDir { get; set; } = "";
+    public string Mode { get; set; } = ""; // "record" or "replay"
+    public string BinaryPath { get; set; } = "";
 
-    public string TestServerSecrets { get; set; }
+    public string? TestServerSecrets { get; set; }
 
     public Action<string>? OnStdOut { get; set; }
     public Action<string>? OnStdErr { get; set; }
