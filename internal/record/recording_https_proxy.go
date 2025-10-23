@@ -182,7 +182,7 @@ func (r *RecordingHTTPSProxy) proxyRequest(w http.ResponseWriter, req *http.Requ
 }
 
 func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp *http.Response, fileName string, shaSum string, body []byte) error {
-	recordedResponse, err := store.NewRecordedResponse(resp, body)
+	recordedResponse, err := store.NewRecordedResponse(resp, r.redactor, body)
 	if err != nil {
 		return err
 	}
@@ -204,9 +204,9 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 	recordPath := filepath.Join(r.recordingDir, fileName+".json")
 
 	recordDir := filepath.Dir(recordPath)
-    if err := os.MkdirAll(recordDir, 0755); err != nil {
-        return err
-    }
+	if err := os.MkdirAll(recordDir, 0755); err != nil {
+		return err
+	}
 
 	// Default to overwriting the file.
 	fileMode := os.O_TRUNC

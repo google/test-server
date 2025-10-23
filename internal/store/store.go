@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	"github.com/google/test-server/internal/config"
+	"github.com/google/test-server/internal/redact"
 )
 
 const HeadSHA = "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d"
@@ -162,7 +163,7 @@ func (r *RecordedRequest) RedactHeaders(headers []string) {
 	}
 }
 
-func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, error) {
+func NewRecordedResponse(resp *http.Response, redactor *redact.Redact, body []byte) (*RecordedResponse, error) {
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		gzipReader, err := gzip.NewReader(bytes.NewReader(body))
 		if err != nil {
@@ -206,7 +207,7 @@ func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, e
 					continue
 				}
 
-				bodySegments = append(bodySegments, jsonMap)
+				bodySegments = append(bodySegments, redactor.Map(jsonMap))
 			}
 		}
 
@@ -215,7 +216,7 @@ func NewRecordedResponse(resp *http.Response, body []byte) (*RecordedResponse, e
 			return nil, err
 		}
 	} else {
-		bodySegments = append(bodySegments, bodySegment)
+		bodySegments = append(bodySegments, redactor.Map(bodySegment))
 	}
 
 	recordedResponse := &RecordedResponse{
