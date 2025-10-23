@@ -33,7 +33,7 @@ namespace TestServerSdk
     private const string GithubOwner = "google";
     private const string GithubRepo = "test-server";
     private const string ProjectName = "test-server";
-    public const string TEST_SERVER_VERSION = "v0.2.8";
+    public const string TEST_SERVER_VERSION = "v0.2.9";
 
     /// <summary>
     /// Ensures the test-server binary for the given version is present in the specified output directory.
