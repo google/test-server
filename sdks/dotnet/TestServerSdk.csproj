@@ -20,7 +20,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="YamlDotNet" Version="12.0.2" />
-	  <PackageReference Include="SharpCompress" Version="0.29.0" />
     <PackageReference Include="SharpCompress" Version="0.29.0" />
   </ItemGroup>
   <ItemGroup>
