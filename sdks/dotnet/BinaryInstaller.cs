@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-using System;
-using System.IO;
-using System.Net.Http;
+using SharpCompress.Common;
+using SharpCompress.Readers;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using SharpCompress.Readers;
-using SharpCompress.Common;
-using System.Reflection;
 
 namespace TestServerSdk
 {
@@ -154,7 +150,11 @@ namespace TestServerSdk
     {
       using var stream = File.OpenRead(filePath);
       using var sha = SHA256.Create();
+#if NET6_0_OR_GREATER
       var hash = await sha.ComputeHashAsync(stream);
+#else
+      var hash = sha.ComputeHash(stream);
+#endif
       return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
     }
 
@@ -163,7 +163,11 @@ namespace TestServerSdk
       Console.WriteLine($"[TestServerSDK] Extracting {archivePath} to {destDir}...");
       if (archiveExt == ".zip")
       {
+#if NET6_0_OR_GREATER
         System.IO.Compression.ZipFile.ExtractToDirectory(archivePath, destDir, true);
+#else
+        System.IO.Compression.ZipFile.ExtractToDirectory(archivePath, destDir);
+#endif
       }
       else
       {

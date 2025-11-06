@@ -1,0 +1,26 @@
+[*.cs]
+# Rule: Remove unused using directives
+# Setting severity to 'suggestion', 'warning', or 'error' will enable the analyzer.
+# Code cleanup tools (like in Visual Studio or `dotnet format`) can then remove them.
+# 'silent' would still report it for `dotnet format` but not show in IDE as a squiggle.
+# 'none' would disable the check entirely.
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+csharp_preferred_using_directive_placement = outside_namespace
+indent_size = 2
+
+# Suppressed above diagnostics for all .cs files
+dotnet_diagnostic.CS8604.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0011.severity = none
+dotnet_diagnostic.IDE1006.severity = none
+dotnet_diagnostic.IDE2000.severity = none
+dotnet_diagnostic.IDE2002.severity = none
+dotnet_diagnostic.CS8600.severity = none
+dotnet_diagnostic.CS8602.severity = none
+dotnet_diagnostic.IDE0009.severity = none
+dotnet_diagnostic.IDE0017.severity = none
+dotnet_diagnostic.IDE0028.severity = none
+dotnet_diagnostic.CS8603.severity = none
+dotnet_diagnostic.CS8424.severity = none
+dotnet_diagnostic.CS0108.severity = none
