@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     
-    <PackageVersion>0.1.5</PackageVersion>
+    <PackageVersion>0.1.6</PackageVersion>
     <Authors>Google LLC</Authors>
     <Description>A .NET SDK to manage the test-server process for integration testing.</Description>
     <PackageProjectUrl>https://github.com/google/test-server</PackageProjectUrl>
@@ -21,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="YamlDotNet" Version="12.0.2" />
     <PackageReference Include="SharpCompress" Version="0.29.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
     <!-- ADD this to embed the file directly into the DLL -->

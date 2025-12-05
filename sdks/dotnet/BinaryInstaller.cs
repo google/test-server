@@ -154,7 +154,11 @@ namespace TestServerSdk
     {
       using var stream = File.OpenRead(filePath);
       using var sha = SHA256.Create();
+#if NETSTANDARD2_0
+      var hash = sha.ComputeHash(stream);
+#else
       var hash = await sha.ComputeHashAsync(stream);
+#endif
       return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
     }
 
@@ -163,7 +167,15 @@ namespace TestServerSdk
       Console.WriteLine($"[TestServerSDK] Extracting {archivePath} to {destDir}...");
       if (archiveExt == ".zip")
       {
+#if NETSTANDARD2_0
+        if (Directory.Exists(destDir))
+        {
+          Directory.Delete(destDir, true);
+        }
+        System.IO.Compression.ZipFile.ExtractToDirectory(archivePath, destDir);
+#else
         System.IO.Compression.ZipFile.ExtractToDirectory(archivePath, destDir, true);
+#endif
       }
       else
       {
