@@ -20,19 +20,26 @@ import PackageDescription
 let package = Package(
     name: "TestServer",
     platforms: [
-        .macOS(.v12)
+        .macOS(.v12) // Matches your current toolchain requirement
     ],
     products: [
-        .library(name: "TestServer", targets: ["TestServer"])
+        .library(
+            name: "TestServer",
+            targets: ["TestServer"]
+        ),
     ],
     targets: [
         .target(
             name: "TestServer",
-            dependencies: []
+            dependencies: [],
+            // Point to the subdirectory containing your wrapper code
+            path: "sdks/swift/Sources/TestServer"
         ),
         .testTarget(
             name: "TestServerTests",
-            dependencies: ["TestServer"]
+            dependencies: ["TestServer"],
+            // Point to the subdirectory containing your verification tests
+            path: "sdks/swift/Tests/TestServerTests"
         ),
     ]
 )

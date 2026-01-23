@@ -39,3 +39,17 @@ sdks/python/src/test_server_sdk.egg-info
 # Python SDK Sample specific
 sdks/python/sample/__pycache__
 sdks/python/sample/.pytest_cache
+
+# Swift / Package Manager
+.build/
+Packages/
+.swiftpm/
+
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/
+xcuserdata/
+
+# Credentials
+.netrc
