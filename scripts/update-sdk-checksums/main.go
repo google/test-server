@@ -69,6 +69,13 @@ var sdksToUpdate = []SDKConfig{
 		ChecksumsJSONFile: "checksums.json",
 		VersionVarName:    "TEST_SERVER_VERSION",
 	},
+	{
+		Name:              "Kotlin",
+		SDKDir:            "sdks/kotlin",
+		InstallScriptFile: []string{"src/main/kotlin/com/google/testserver/BinaryInstaller.kt"},
+		ChecksumsJSONFile: "checksums.json",
+		VersionVarName:    "TEST_SERVER_VERSION",
+	},
 }
 
 func fetchChecksumsTxt(version string) (string, error) {
