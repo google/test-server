@@ -1,0 +1,58 @@
+{
+  "recordID": "test_image_jpg_upload",
+  "interactions": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/upload/v1beta/files",
+        "request": "POST /upload/v1beta/files HTTP/1.1",
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "Connection": "keep-alive",
+          "Content-Length": "57",
+          "Content-Type": "application/json",
+          "Test-Name": "test_image_jpg_upload",
+          "X-Goog-Upload-Command": "start",
+          "X-Goog-Upload-Header-Content-Length": "394671",
+          "X-Goog-Upload-Header-Content-Type": "image/jpeg",
+          "X-Goog-Upload-Protocol": "resumable"
+        },
+        "bodySegments": [
+          {
+            "file": {
+              "mimeType": "image/jpeg",
+              "sizeBytes": 394671
+            }
+          }
+        ],
+        "previousRequest": "b4d6e60a9b97e7b98c63df9308728c5c88c0b40c398046772c63447b94608b4d",
+        "serverAddress": "generativelanguage.googleapis.com",
+        "port": 443,
+        "protocol": "https"
+      },
+      "shaSum": "f2c6a5037cb0d6b1496539c182b1ee4b7e2ec9d367ecfe576df061d369259de3",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Length": "0",
+          "Content-Type": "text/plain; charset=utf-8",
+          "Date": "Tue, 16 Sep 2025 17:09:15 GMT",
+          "Server": "UploadServer",
+          "X-Goog-Upload-Chunk-Granularity": "8388608",
+          "X-Goog-Upload-Control-Url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=AAwnv3IAwQ76sSSWtkOp94W-nNQLAGzqq5WadndVyvjNryp6rnZEJJ1_sO2ntd0p12NICkChbd2zSZVpsUM3qr2nEXhC6DIXeCJtvsS3bEH1Iw\u0026upload_protocol=resumable",
+          "X-Goog-Upload-Header-Content-Type": "application/json; charset=UTF-8",
+          "X-Goog-Upload-Header-Vary": "Origin, X-Origin, Referer",
+          "X-Goog-Upload-Header-X-Google-Backends": "unix:/tmp/esfbackend.1758016322.665428.62587",
+          "X-Goog-Upload-Header-X-Google-Esf-Cloud-Client-Params": "backend_service_name: \"generativelanguage.googleapis.com\" backend_fully_qualified_method: \"google.ai.generativelanguage.v1beta.FileService.CreateFile\"",
+          "X-Goog-Upload-Header-X-Google-Gfe-Backend-Request-Cost": "17.9547",
+          "X-Goog-Upload-Header-X-Google-Security-Signals": "FRAMEWORK=ONE_PLATFORM,ENV=borg,ENV_DEBUG=borg_user:genai-api;borg_job:prod.genai-api",
+          "X-Goog-Upload-Header-X-Google-Session-Info": "GgQYECgLIAE6IxIhZ2VuZXJhdGl2ZWxhbmd1YWdlLmdvb2dsZWFwaXMuY29t",
+          "X-Goog-Upload-Status": "active",
+          "X-Goog-Upload-Url": "http://localhost:14530/upload/v1beta/files?upload_id=AAwnv3IAwQ76sSSWtkOp94W-nNQLAGzqq5WadndVyvjNryp6rnZEJJ1_sO2ntd0p12NICkChbd2zSZVpsUM3qr2nEXhC6DIXeCJtvsS3bEH1Iw\u0026upload_protocol=resumable",
+          "X-Guploader-Uploadid": "AAwnv3IAwQ76sSSWtkOp94W-nNQLAGzqq5WadndVyvjNryp6rnZEJJ1_sO2ntd0p12NICkChbd2zSZVpsUM3qr2nEXhC6DIXeCJtvsS3bEH1Iw"
+        }
+      }
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import pytest
 import requests
 import json
-from pathlib import Path
+from google import genai
+import os
 
 
 @pytest.mark.usefixtures("managed_server")
@@ -41,6 +42,19 @@ class TestSampleWithServer:
         assert "github" in json.dumps(dict(response.headers))
         
         print("[PyTest] Received 200 OK, content check passed.")
+    
+    def test_image_jpg_upload(self):
+        options_with_header = {
+            'headers': {
+                'Test-Name': "test_image_jpg_upload"
+            },
+            'base_url': "http://localhost:14530"
+        }
+        client = genai.Client(api_key=os.environ.get('GOOGLE_API_KEY'), http_options=options_with_header)
+
+        file = client.files.upload(file='./data/scones.jpg')
+        print(file)
+
 
 
 class TestAnotherSampleWithoutServer:
