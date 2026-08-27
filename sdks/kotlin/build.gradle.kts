@@ -17,6 +17,7 @@
 plugins {
   kotlin("jvm") version "1.9.22"
   kotlin("plugin.serialization") version "1.9.22"
+  `maven-publish`
 }
 
 kotlin {
@@ -45,5 +46,16 @@ tasks.test {
     showCauses = true
     showStackTraces = true
     exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+  }
+}
+
+// This configuration is purely for integration testing purposes.
+// It enables publishing the Kotlin SDK to the local maven cache (e.g. `./gradlew publishToMavenLocal`),
+// so that local platform test suites (like `firebase-android-sdk`) can resolve and compile it.
+publishing {
+  publications {
+    create<MavenPublication>("mavenJava") {
+      from(components["java"])
+    }
   }
 }
