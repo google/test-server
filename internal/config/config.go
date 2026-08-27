@@ -31,6 +31,7 @@ type EndpointConfig struct {
 	SourceType                 string              `yaml:"source_type"`
 	Health                     string              `yaml:"health"`
 	RedactRequestHeaders       []string            `yaml:"redact_request_headers"`
+	RedactResponseHeaders      []string            `yaml:"redact_response_headers"`
 	ResponseHeaderReplacements []HeaderReplacement `yaml:"response_header_replacements"`
 }
 

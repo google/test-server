@@ -163,6 +163,17 @@ func (r *RecordedRequest) RedactHeaders(headers []string) {
 	}
 }
 
+// RedactHeaders removes the specified headers matching exact names or wildcard prefixes from the RecordedResponse.
+func (r *RecordedResponse) RedactHeaders(patterns []string) {
+	for _, pattern := range patterns {
+		for key := range r.Headers {
+			if strings.EqualFold(key, pattern) || (strings.HasSuffix(pattern, "*") && strings.HasPrefix(strings.ToLower(key), strings.ToLower(strings.TrimSuffix(pattern, "*")))) {
+				delete(r.Headers, key)
+			}
+		}
+	}
+}
+
 func NewRecordedResponse(resp *http.Response, redactor *redact.Redact, body []byte) (*RecordedResponse, error) {
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		gzipReader, err := gzip.NewReader(bytes.NewReader(body))

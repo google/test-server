@@ -366,3 +366,63 @@ type errorReader struct{}
 func (e *errorReader) Read(p []byte) (n int, err error) {
 	return 0, fmt.Errorf("simulated error")
 }
+
+func TestRecordedResponse_RedactHeaders(t *testing.T) {
+	testCases := []struct {
+		name            string
+		response        RecordedResponse
+		patterns        []string
+		expectedHeaders map[string]string
+	}{
+		{
+			name: "Redact exact matches",
+			response: RecordedResponse{
+				Headers: map[string]string{
+					"Content-Type":     "application/json",
+					"X-Google-Service": "firebase",
+					"Server":           "ESF",
+				},
+			},
+			patterns: []string{"X-Google-Service", "Server"},
+			expectedHeaders: map[string]string{
+				"Content-Type": "application/json",
+			},
+		},
+		{
+			name: "Redact wildcard patterns",
+			response: RecordedResponse{
+				Headers: map[string]string{
+					"Content-Type":         "application/json",
+					"X-Google-Service":     "firebase",
+					"X-Google-Gfe-Version": "1.0",
+					"Server":               "ESF",
+				},
+			},
+			patterns: []string{"X-Google-*"},
+			expectedHeaders: map[string]string{
+				"Content-Type": "application/json",
+				"Server":       "ESF",
+			},
+		},
+		{
+			name: "Redact case insensitivity",
+			response: RecordedResponse{
+				Headers: map[string]string{
+					"Content-Type":     "application/json",
+					"x-google-service": "firebase",
+				},
+			},
+			patterns: []string{"X-Google-Service"},
+			expectedHeaders: map[string]string{
+				"Content-Type": "application/json",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.response.RedactHeaders(tc.patterns)
+			require.Equal(t, tc.expectedHeaders, tc.response.Headers, "RedactHeaders() result mismatch")
+		})
+	}
+}

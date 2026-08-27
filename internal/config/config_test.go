@@ -41,6 +41,8 @@ func TestReadConfigWithFs(t *testing.T) {
     target_type: https
     redact_request_headers:
       - X-Goog-Api-Key
+    redact_response_headers:
+      - X-Google-*
   - target_host: api.example.com
     target_port: 8080
     source_port: 8081
@@ -51,12 +53,13 @@ func TestReadConfigWithFs(t *testing.T) {
 			wantConfig: &TestServerConfig{
 				Endpoints: []EndpointConfig{
 					{
-						TargetHost:           "www.google.com",
-						TargetPort:           443,
-						SourcePort:           1443,
-						SourceType:           "http",
-						TargetType:           "https",
-						RedactRequestHeaders: []string{"X-Goog-Api-Key"},
+						TargetHost:            "www.google.com",
+						TargetPort:            443,
+						SourcePort:            1443,
+						SourceType:            "http",
+						TargetType:            "https",
+						RedactRequestHeaders:  []string{"X-Goog-Api-Key"},
+						RedactResponseHeaders: []string{"X-Google-*"},
 					},
 					{
 						TargetHost: "api.example.com",
