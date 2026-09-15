@@ -187,6 +187,9 @@ func (r *RecordingHTTPSProxy) recordResponse(recReq *store.RecordedRequest, resp
 		return err
 	}
 
+	// Remove response headers matching config patterns
+	recordedResponse.RemoveHeaders(r.config.ResponseHeaderRemovals)
+
 	recordFile, ok := r.seenFiles[fileName]
 	if !ok {
 		r.seenFiles[fileName] = store.RecordFile{RecordID: fileName, Interactions: []*store.RecordInteraction{}}
