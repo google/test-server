@@ -4,10 +4,14 @@
   "description": "TypeScript SDK for test-server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "registry": "https://us-npm.pkg.dev/oss-exit-gate-prod/test-server--npm/"
+  },
   "scripts": {
     "postinstall": "node postinstall.js",
     "build": "tsc",
     "prepublishOnly": "npm run build",
+    "release:exit-gate": "./release_exit_gate.sh",
     "test": "npm run build & jasmine"
   },
   "repository": {
